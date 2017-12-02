@@ -5,6 +5,8 @@
 
 #include <thread>
 #include <vector>
+#include <map>
+#include <array>
 
 #include <uv.h>
 #include <node_api.h>
