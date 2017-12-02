@@ -22,7 +22,7 @@ namespace node_ole {
 		BSTR name;
 		USHORT flags;
 		type_info type;
-	};
+	} arg_info;
 
 	typedef struct func_info {
 		MEMBERID memId;

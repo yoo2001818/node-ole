@@ -20,7 +20,7 @@ namespace node_ole {
 		std::vector<VARIANT> params;
 	} response_event;
 
-	enum response_type {
+	enum class response_type {
 		create, invoke, event
 	};
 
@@ -50,7 +50,7 @@ namespace node_ole {
 		LPDISPATCH * dispatch;
 	} request_gc;
 
-	enum request_type {
+	enum class request_type {
 		create, invoke, gc
 	};
 
