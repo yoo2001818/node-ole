@@ -4,6 +4,7 @@ namespace node_ole {
 
 	napi_value Init(napi_env env, napi_value exports) {
 		// Start OLE worker thread - use MTA if possible.
+		
 		return exports;
 	}
 
