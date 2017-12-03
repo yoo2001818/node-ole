@@ -59,13 +59,16 @@ namespace node_ole {
 		ResolverPersistent * deferred = new ResolverPersistent(resolver);
 
 		// Create event object, then push it.
-		Request req;
-		req.type = RequestType::Create;
+		Request req = Request(RequestType::Create);
 		req.create.deferred = deferred;
 		req.create.name = std::wstring((wchar_t *) **value);
 
+		std::wcout << req.create.name;
+
 		env->pushRequest(std::move(req));
 		delete value;
+
+		info.GetReturnValue().Set(promise);
 	}
 
 	NAN_MODULE_INIT(Environment::Init) {

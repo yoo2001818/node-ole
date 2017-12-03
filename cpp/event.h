@@ -6,35 +6,33 @@ namespace node_ole {
 	using ResolverPersistent = Nan::Persistent<v8::Promise::Resolver>;
 	using FunctionPersistent = Nan::Persistent<v8::Function>;
 
-	typedef struct ResponseCreate {
+	class ResponseCreate {
+	public:
 		dispatch_info * info;
 		ResolverPersistent * deferred;
-	} ResponseCreate;
+	};
 
-	typedef struct ResponseInvoke {
+	class ResponseInvoke {
+	public:
 		func_info * funcInfo;
 		std::vector<VARIANT> outValues;
 		VARIANT returnValue;
 		ResolverPersistent * deferred;
-	} ResponseInvoke;
+	};
 
-	typedef struct ResponseEvent {
+	class ResponseEvent {
+	public:
 		func_info * funcInfo;
 		std::vector<VARIANT> params;
 		FunctionPersistent * eventCallback;
-	} ResponseEvent;
+	};
 
 	enum class ResponseType {
 		Create, Invoke, Event
 	};
 
-	typedef struct Response {
-		ResponseType type;
-		union {
-			ResponseCreate create;
-			ResponseInvoke invoke;
-			ResponseEvent event;
-		};
+	class Response {
+	public:
 		Response() {}
 		Response(Response&& o): type(std::move(o.type)) {
 			switch (type) {
@@ -62,47 +60,77 @@ namespace node_ole {
 				break;
 			}
 		}
-	} Response;
 
-	typedef struct RequestCreate {
+		ResponseType type;
+		union {
+			ResponseCreate create;
+			ResponseInvoke invoke;
+			ResponseEvent event;
+		};
+	};
+
+	class RequestCreate {
+	public:
 		std::wstring name;
 		ResolverPersistent * deferred;
 		FunctionPersistent * eventCallback;
-	} RequestCreate;
+	};
 
-	typedef struct RequestInvoke {
+	class RequestInvoke {
+	public:
 		LPUNKNOWN dispatch;
 		func_info * funcInfo;
 		std::vector<VARIANT> params;
 		ResolverPersistent * deferred;
-	} RequestInvoke;
+	};
 
-	typedef struct RequestGC {
+	class RequestGC {
+	public:
 		LPUNKNOWN dispatch;
-	} RequestGC;
+	};
 
 	enum class RequestType {
 		Create, Invoke, GC
 	};
 
-	typedef struct Request {
-		RequestType type;
-		union {
-			RequestCreate create;
-			RequestInvoke invoke;
-			RequestGC gc;
-		};
-		Request() {}
+	class Request {
+	public:
+		Request(RequestType type) : type(type) {
+			switch (type) {
+			case RequestType::Create:
+				new (&create) RequestCreate();
+				break;
+			case RequestType::Invoke:
+				new (&invoke) RequestInvoke();
+				break;
+			case RequestType::GC:
+				new (&gc) RequestGC();
+				break;
+			}
+		}
+		Request(Request& o) : type(o.type) {
+			switch (type) {
+			case RequestType::Create:
+				new (&create) RequestCreate(o.create);
+				break;
+			case RequestType::Invoke:
+				new (&invoke) RequestInvoke(o.invoke);
+				break;
+			case RequestType::GC:
+				new (&gc) RequestGC(o.gc);
+				break;
+			}
+		}
 		Request(Request&& o) : type(std::move(o.type)) {
 			switch (type) {
 			case RequestType::Create:
-				create = std::move(o.create);
+				new (&create) RequestCreate(std::move(o.create));
 				break;
 			case RequestType::Invoke:
-				invoke = std::move(o.invoke);
+				new (&invoke) RequestInvoke(std::move(o.invoke));
 				break;
 			case RequestType::GC:
-				gc = std::move(o.gc);
+				new (&gc) RequestGC(std::move(o.gc));
 				break;
 			}
 		}
@@ -119,5 +147,12 @@ namespace node_ole {
 				break;
 			}
 		}
-	} Request;
+
+		RequestType type;
+		union {
+			RequestCreate create;
+			RequestInvoke invoke;
+			RequestGC gc;
+		};
+	};
 }

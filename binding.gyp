@@ -5,8 +5,7 @@
       'sources': [
         'cpp/main.cpp',
         'cpp/handler.cpp',
-        'cpp/environment.cpp',
-		'cpp/event.cpp'
+        'cpp/environment.cpp'
       ],
       'dependencies': [
       ],
