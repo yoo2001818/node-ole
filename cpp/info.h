@@ -19,7 +19,7 @@ namespace node_ole {
 	} type_info;
 
 	typedef struct arg_info {
-		BSTR name;
+		std::wstring name;
 		USHORT flags;
 		type_info type;
 	} arg_info;
@@ -27,8 +27,8 @@ namespace node_ole {
 	typedef struct func_info {
 		MEMBERID memId;
 		DISPID dispId;
-		BSTR name;
-		BSTR description;
+		std::wstring name;
+		std::wstring description;
 		type_info returnType;
 		std::vector<arg_info> args;
 		std::vector<arg_info> outs;
@@ -36,6 +36,6 @@ namespace node_ole {
 
 	typedef struct dispatch_info {
 		IUnknown * ptr;
-		std::map<BSTR, std::vector<func_info>> info;
+		std::map<std::wstring, std::vector<func_info>> info;
 	} dispatch_info;
 }

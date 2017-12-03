@@ -9,5 +9,6 @@ namespace node_ole {
 
 	void nodeHandler(uv_async_t * handle);
 
-	napi_value nodeInitHandler(napi_env env, napi_callback_info info);
+	NAN_METHOD(nodeProgIdInitHandler);
+	NAN_METHOD(nodeClsIdInitHandler);
 }

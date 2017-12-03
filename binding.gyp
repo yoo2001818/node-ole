@@ -5,9 +5,13 @@
       'sources': [
         'cpp/main.cpp',
         'cpp/handler.cpp',
-        'cpp/environment.cpp'
+        'cpp/environment.cpp',
+		'cpp/event.cpp'
       ],
       'dependencies': [
+      ],
+      "include_dirs" : [
+        "<!(node -e \"require('nan')\")"
       ]
     }
   ]

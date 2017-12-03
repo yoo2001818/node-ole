@@ -3,63 +3,121 @@
 #include "info.h"
 
 namespace node_ole {
-	typedef struct response_create {
-		dispatch_info * info;
-		napi_deferred * deferred;
-	} response_create;
+	using ResolverPersistent = Nan::Persistent<v8::Promise::Resolver>;
+	using FunctionPersistent = Nan::Persistent<v8::Function>;
 
-	typedef struct response_invoke {
+	typedef struct ResponseCreate {
+		dispatch_info * info;
+		ResolverPersistent * deferred;
+	} ResponseCreate;
+
+	typedef struct ResponseInvoke {
 		func_info * funcInfo;
 		std::vector<VARIANT> outValues;
 		VARIANT returnValue;
-		napi_deferred * deferred;
-	} response_invoke;
+		ResolverPersistent * deferred;
+	} ResponseInvoke;
 
-	typedef struct response_event {
+	typedef struct ResponseEvent {
 		func_info * funcInfo;
 		std::vector<VARIANT> params;
-	} response_event;
+		FunctionPersistent * eventCallback;
+	} ResponseEvent;
 
-	enum class response_type {
-		create, invoke, event
+	enum class ResponseType {
+		Create, Invoke, Event
 	};
 
-	typedef struct response {
-		response_type type;
+	typedef struct Response {
+		ResponseType type;
 		union {
-			response_create create;
-			response_invoke invoke;
-			response_event event;
+			ResponseCreate create;
+			ResponseInvoke invoke;
+			ResponseEvent event;
 		};
-	} response;
+		Response() {}
+		Response(Response&& o): type(std::move(o.type)) {
+			switch (type) {
+			case ResponseType::Create:
+				create = std::move(o.create);
+				break;
+			case ResponseType::Invoke:
+				invoke = std::move(o.invoke);
+				break;
+			case ResponseType::Event:
+				event = std::move(o.event);
+				break;
+			}
+		}
+		~Response() {
+			switch (type) {
+			case ResponseType::Create:
+				create.~ResponseCreate();
+				break;
+			case ResponseType::Invoke:
+				invoke.~ResponseInvoke();
+				break;
+			case ResponseType::Event:
+				event.~ResponseEvent();
+				break;
+			}
+		}
+	} Response;
 
-	typedef struct request_create {
-		wchar_t * prgid;
-		CLSID clsid;
-		napi_deferred * deferred;
-	} request_create;
+	typedef struct RequestCreate {
+		std::wstring name;
+		ResolverPersistent * deferred;
+		FunctionPersistent * eventCallback;
+	} RequestCreate;
 
-	typedef struct request_invoke {
-		LPDISPATCH * dispatch;
+	typedef struct RequestInvoke {
+		LPUNKNOWN dispatch;
 		func_info * funcInfo;
 		std::vector<VARIANT> params;
-		napi_deferred * deferred;
-	} request_invoke;
+		ResolverPersistent * deferred;
+	} RequestInvoke;
 
-	typedef struct request_gc {
-		LPDISPATCH * dispatch;
-	} request_gc;
+	typedef struct RequestGC {
+		LPUNKNOWN dispatch;
+	} RequestGC;
 
-	enum class request_type {
-		create, invoke, gc
+	enum class RequestType {
+		Create, Invoke, GC
 	};
 
-	typedef struct request {
-		request_type type;
+	typedef struct Request {
+		RequestType type;
 		union {
-			request_create create;
-			request_invoke invoke;
-			request_gc gc;
+			RequestCreate create;
+			RequestInvoke invoke;
+			RequestGC gc;
 		};
-	} request;
+		Request() {}
+		Request(Request&& o) : type(std::move(o.type)) {
+			switch (type) {
+			case RequestType::Create:
+				create = std::move(o.create);
+				break;
+			case RequestType::Invoke:
+				invoke = std::move(o.invoke);
+				break;
+			case RequestType::GC:
+				gc = std::move(o.gc);
+				break;
+			}
+		}
+		~Request() {
+			switch (type) {
+			case RequestType::Create:
+				create.~RequestCreate();
+				break;
+			case RequestType::Invoke:
+				invoke.~RequestInvoke();
+				break;
+			case RequestType::GC:
+				gc.~RequestGC();
+				break;
+			}
+		}
+	} Request;
 }

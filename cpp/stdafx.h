@@ -1,12 +1,11 @@
 #pragma once
 
-#include <windows.h>
+#include <nan.h>
 #include <ole2.h>
 
-#include <thread>
+#include <iostream>
+#include <stdio.h>
+#include <string>
 #include <vector>
 #include <map>
 #include <array>
-
-#include <uv.h>
-#include <node_api.h>

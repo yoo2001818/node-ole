@@ -1,0 +1,27 @@
+{
+  "name": "ole",
+  "version": "0.1.0",
+  "description": "ActiveX on Node.js with event (IConnectionPoint) support",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yoo2001818/node-ole.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "gypfile": true,
+  "bugs": {
+    "url": "https://github.com/yoo2001818/node-ole/issues"
+  },
+  "homepage": "https://github.com/yoo2001818/node-ole#readme",
+  "dependencies": {
+    "nan": "^2.8.0"
+  }
+}

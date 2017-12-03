@@ -44,29 +44,4 @@ namespace node_ole {
 		Environment * env = (Environment *)handle->data;
 		// TODO Handle event queue
 	}
-
-	napi_value nodeInitHandler(napi_env env, napi_callback_info cbinfo) {
-		size_t argc = 2;
-		napi_value argv[2];
-		napi_value thisArg;
-		napi_status status;
-		Environment * environment;
-		status = napi_get_cb_info(env, cbinfo, &argc, argv, &thisArg, (void **)&environment);
-		assert_napi(status);
-		if (argc < 2) {
-			napi_throw_type_error(env, "INVALID_ARGS", "There must be 2 arguments");
-			return NULL;
-		}
-		napi_value isClsId;
-		bool isClsIdVal;
-		status = napi_coerce_to_bool(env, argv[0], &isClsId);
-		assert_napi(status);
-		status = napi_get_value_bool(env, isClsId, &isClsIdVal);
-		if (isClsIdVal) {
-			// TODO Init COM using CLSID
-		} else {
-			// TODO Init COM using PROGID
-		}
-		return NULL;
-	}
 }

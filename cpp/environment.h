@@ -3,20 +3,23 @@
 #include "event.h"
 
 namespace node_ole {
-	class Environment {
+	class Environment : public Nan::ObjectWrap {
 	public:
-		Environment(napi_env env);
-		~Environment();
+		Environment();
+		virtual ~Environment();
 
-		void pushRequest(request req);
-		void pushResponse(response res);
+		static NAN_MODULE_INIT(Init);
+		static NAN_METHOD(New);
+		static NAN_METHOD(Create);
 
-		napi_env env;
+		void pushRequest(Request req);
+		void pushResponse(Response res);
+
 		HANDLE workerThread;
 		DWORD workerId;
 
-		std::vector<request> reqQueue;
-		std::vector<response> resQueue;
+		std::vector<Request> reqQueue;
+		std::vector<Response> resQueue;
 
 		HANDLE workerHandle;
 		uv_async_t nodeHandle;
