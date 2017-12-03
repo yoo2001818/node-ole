@@ -7,19 +7,26 @@ namespace node_ole {
 	public:
 		Environment();
 		virtual ~Environment();
+		
+		void close();
 
 		static NAN_MODULE_INIT(Init);
 		static NAN_METHOD(New);
 		static NAN_METHOD(Create);
 
-		void pushRequest(Request req);
-		void pushResponse(Response res);
+		static void Cleanup();
+
+		void pushRequest(std::unique_ptr<Request> req);
+		void pushResponse(std::unique_ptr<Response> res);
 
 		HANDLE workerThread;
 		DWORD workerId;
 
-		std::vector<Request> reqQueue;
-		std::vector<Response> resQueue;
+		std::queue<std::unique_ptr<Request>> reqQueue;
+		std::queue<std::unique_ptr<Response>> resQueue;
+
+		std::mutex reqGuard;
+		std::mutex resGuard;
 
 		HANDLE workerHandle;
 		uv_async_t nodeHandle;

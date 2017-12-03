@@ -3,6 +3,8 @@
 #include "environment.h"
 #include "handler.h"
 
+static std::vector<node_ole::Environment *> instances;
+
 namespace node_ole {
 	Environment::Environment() {
 		// Create both side of handle.
@@ -12,23 +14,37 @@ namespace node_ole {
 		workerExitHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
 		// Initialize worker thread.
 		workerThread = CreateThread(NULL, 0, workerHandler, (void *)this, 0, &workerId);
+		instances.push_back(this);
 	}
 
 	Environment::~Environment() {
+		close();
+		instances.erase(std::remove(instances.begin(), instances.end(), this), instances.end());
+	}
+
+	void Environment::close() {
 		// Shutdown
-		uv_close((uv_handle_t *) &nodeHandle, NULL);
+		uv_close((uv_handle_t *)&nodeHandle, NULL);
 		SetEvent(workerExitHandle);
 		WaitForSingleObject(workerThread, INFINITE);
 		CloseHandle(workerHandle);
 		CloseHandle(workerExitHandle);
 	}
 
-	void Environment::pushRequest(Request req) {
-
+	void Environment::pushRequest(std::unique_ptr<Request> req) {
+		{
+			std::lock_guard<std::mutex> lock(reqGuard);
+			reqQueue.push(std::move(req));
+		}
+		SetEvent(workerHandle);
 	}
 
-	void Environment::pushResponse(Response req) {
-
+	void Environment::pushResponse(std::unique_ptr<Response> res) {
+		{
+			std::lock_guard<std::mutex> lock(resGuard);
+			resQueue.push(std::move(res));
+		}
+		uv_async_send(&nodeHandle);
 	}
 
 	NAN_METHOD(Environment::New) {
@@ -59,11 +75,10 @@ namespace node_ole {
 		ResolverPersistent * deferred = new ResolverPersistent(resolver);
 
 		// Create event object, then push it.
-		Request req = Request(RequestType::Create);
-		req.create.deferred = deferred;
-		req.create.name = std::wstring((wchar_t *) **value);
-
-		std::wcout << req.create.name;
+		
+		std::unique_ptr<RequestCreate> req = std::make_unique<RequestCreate>();
+		req->deferred = deferred;
+		req->name = std::wstring((wchar_t *) **value);
 
 		env->pushRequest(std::move(req));
 		delete value;
@@ -79,5 +94,11 @@ namespace node_ole {
 		Nan::SetPrototypeMethod(tpl, "create", Create);
 
 		Nan::Set(target, Nan::New("Environment").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
+	}
+
+	void Environment::Cleanup() {
+		for (auto it = instances.begin(); it != instances.end(); it++) {
+			(*it)->close();
+		}
 	}
 }

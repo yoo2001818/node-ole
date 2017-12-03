@@ -17,6 +17,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved) {
 		break;
 	case DLL_PROCESS_DETACH:
 		// Stop worker thread
+		node_ole::Environment::Cleanup();
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
