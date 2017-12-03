@@ -2,6 +2,7 @@
 #include "handler.h"
 #include "environment.h"
 #include "event.h"
+#include "comutil.h"
 
 namespace node_ole {
 	DWORD WINAPI workerHandler(LPVOID lpParam) {
@@ -58,6 +59,13 @@ namespace node_ole {
 			case RequestType::Create: {
 				RequestCreate * r = static_cast<RequestCreate*>(req.get());
 				std::wcout << r->name << std::endl;
+				// Initialize COM
+				LPUNKNOWN lpunk;
+				DispatchInfo * dispatchInfo;
+				initObject(r->name.data(), &lpunk);
+				// Retrieve type information.
+				getObjectInfo(lpunk, &dispatchInfo);
+				// Initialize event listeners.
 				break;
 			}
 			case RequestType::Invoke: {

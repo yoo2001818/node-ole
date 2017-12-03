@@ -2,40 +2,48 @@
 #include "stdafx.h"
 
 namespace node_ole {
-	enum ptr_type {
-		pointer,
-		carray,
-		safearray
+	enum class PtrType {
+		Pointer,
+		CArray,
+		SafeArray
 	};
 
-	typedef struct ptr_info {
-		ptr_type type;
+	class PtrInfo {
+	public:
+		PtrType type;
 		std::vector<ULONG> bounds;
-	} ptr_info;
+	};
 
-	typedef struct type_info {
+	class TypeInfo {
+	public:
 		VARTYPE type;
-		std::vector<ptr_info> ptrs;
-	} type_info;
+		std::vector<PtrInfo> ptrs;
+	};
 
-	typedef struct arg_info {
+	class ArgInfo {
+	public:
 		std::wstring name;
 		USHORT flags;
-		type_info type;
-	} arg_info;
+		TypeInfo type;
+	};
 
-	typedef struct func_info {
+	class FuncInfo {
+	public:
 		MEMBERID memId;
 		DISPID dispId;
+		INVOKEKIND invokeKind;
 		std::wstring name;
 		std::wstring description;
-		type_info returnType;
-		std::vector<arg_info> args;
-		std::vector<arg_info> outs;
-	} func_info;
+		TypeInfo returnType;
+		std::vector<ArgInfo> args;
+		std::vector<ArgInfo> outs;
+	};
 
-	typedef struct dispatch_info {
+	class DispatchInfo {
+	public:
 		IUnknown * ptr;
-		std::map<std::wstring, std::vector<func_info>> info;
-	} dispatch_info;
+		std::list<std::wstring> typeNames;
+		std::map<std::wstring, std::vector<FuncInfo>> info;
+		std::map<std::wstring, std::vector<FuncInfo>> eventInfo;
+	};
 }

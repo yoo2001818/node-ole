@@ -75,7 +75,6 @@ namespace node_ole {
 		ResolverPersistent * deferred = new ResolverPersistent(resolver);
 
 		// Create event object, then push it.
-		
 		std::unique_ptr<RequestCreate> req = std::make_unique<RequestCreate>();
 		req->deferred = deferred;
 		req->name = std::wstring((wchar_t *) **value);

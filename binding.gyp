@@ -5,7 +5,8 @@
       'sources': [
         'cpp/main.cpp',
         'cpp/handler.cpp',
-        'cpp/environment.cpp'
+        'cpp/environment.cpp',
+		'cpp/comutil.cpp'
       ],
       'dependencies': [
       ],

@@ -2,6 +2,7 @@
 
 #include <nan.h>
 #include <ole2.h>
+#include <comdef.h>
 
 #include <iostream>
 #include <stdio.h>
@@ -10,3 +11,4 @@
 #include <map>
 #include <array>
 #include <mutex>
+#include <list>

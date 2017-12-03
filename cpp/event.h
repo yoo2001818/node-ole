@@ -20,7 +20,8 @@ namespace node_ole {
 	public:
 		virtual ~ResponseCreate() = default;
 		virtual ResponseType getType() { return ResponseType::Create; };
-		dispatch_info * info;
+		HRESULT result;
+		DispatchInfo * info;
 		ResolverPersistent * deferred;
 	};
 
@@ -28,7 +29,7 @@ namespace node_ole {
 	public:
 		virtual ~ResponseInvoke() = default;
 		virtual ResponseType getType() { return ResponseType::Invoke; };
-		func_info * funcInfo;
+		FuncInfo * funcInfo;
 		std::vector<VARIANT> outValues;
 		VARIANT returnValue;
 		ResolverPersistent * deferred;
@@ -38,7 +39,7 @@ namespace node_ole {
 	public:
 		virtual ~ResponseEvent() = default;
 		virtual ResponseType getType() { return ResponseType::Event; };
-		func_info * funcInfo;
+		FuncInfo * funcInfo;
 		std::vector<VARIANT> params;
 		FunctionPersistent * eventCallback;
 	};
@@ -67,7 +68,7 @@ namespace node_ole {
 		virtual ~RequestInvoke() = default;
 		virtual RequestType getType() { return RequestType::Invoke; };
 		LPUNKNOWN dispatch;
-		func_info * funcInfo;
+		FuncInfo * funcInfo;
 		std::vector<VARIANT> params;
 		ResolverPersistent * deferred;
 	};
