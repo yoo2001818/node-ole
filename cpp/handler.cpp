@@ -21,7 +21,7 @@ namespace node_ole {
 				QS_ALLINPUT | QS_ALLPOSTMESSAGE, MWMO_INPUTAVAILABLE)) {
 			case WAIT_OBJECT_0: {
 				// Handle event queue
-				std::cout << "Something received!!!" << std::endl;
+				std::cout << "COM received!!!" << std::endl;
 				handleWorkerEvent(env);
 				break;
 			}
@@ -62,10 +62,21 @@ namespace node_ole {
 				// Initialize COM
 				LPUNKNOWN lpunk;
 				DispatchInfo * dispatchInfo;
-				initObject(r->name.data(), &lpunk);
-				// Retrieve type information.
-				getObjectInfo(lpunk, &dispatchInfo);
-				// Initialize event listeners.
+				HRESULT result;
+				result = initObject(r->name.data(), &lpunk);
+				if SUCCEEDED(result) {
+					// Retrieve type information.
+					result = getObjectInfo(lpunk, &dispatchInfo);
+					// Initialize event listeners. TODO
+				}
+
+				// Send the response back to the node.
+				std::unique_ptr<ResponseCreate> res = std::make_unique<ResponseCreate>();
+				res->deferred = r->deferred;
+				res->info = dispatchInfo;
+				res->result = result;
+				
+				env->pushResponse(std::move(res));
 				break;
 			}
 			case RequestType::Invoke: {
@@ -82,6 +93,45 @@ namespace node_ole {
 
 	void nodeHandler(uv_async_t * handle) {
 		Environment * env = (Environment *)handle->data;
-		// TODO Handle event queue
+		printf("Node received!! \n");
+		while (true) {
+			std::unique_ptr<Response> res;
+			{
+				std::lock_guard<std::mutex> lock(env->resGuard);
+				if (env->resQueue.empty()) break;
+				res = std::move(env->resQueue.front());
+				env->resQueue.pop();
+			}
+			switch (res->getType()) {
+			case ResponseType::Create: {
+				Nan::HandleScope scope;
+				ResponseCreate * r = static_cast<ResponseCreate*>(res.get());
+				printf("Resolving ResponseCreate\n");
+				auto resolver = Nan::New(*(r->deferred));
+				if (r->result == S_OK) {
+					// Unwrap the information object into an object - the object should wrap a
+					// DispatchObject, while the function should contain FuncInfo.
+					resolver->Resolve(Nan::Undefined());
+				} else {
+					// Throw an error.
+					_com_error err(r->result);
+					printf("%X\n", err.Error());
+					resolver->Reject(Nan::Error(Nan::New((uint16_t *) err.ErrorMessage()).ToLocalChecked()));
+				}
+				v8::Isolate::GetCurrent()->RunMicrotasks();
+				r->deferred->Reset();
+				delete r->deferred;
+				break;
+			}
+			case ResponseType::Invoke: {
+				ResponseInvoke * r = static_cast<ResponseInvoke*>(res.get());
+				break;
+			}
+			case ResponseType::Event: {
+				ResponseEvent * r = static_cast<ResponseEvent*>(res.get());
+				break;
+			}
+			}
+		}
 	}
 }

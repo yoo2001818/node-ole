@@ -10,4 +10,9 @@
     <LocalDebuggerCommandArguments>C:\Users\yoo2001818\git\node-ole\example\ie.js</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>C:\Program Files\nodejs\node.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>C:\Users\yoo2001818\git\node-ole\example\ie.js</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

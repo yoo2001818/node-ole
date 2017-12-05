@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cpp\comutil.h" />
     <ClInclude Include="cpp\environment.h" />
     <ClInclude Include="cpp\event.h" />
     <ClInclude Include="cpp\handler.h" />
@@ -26,6 +27,7 @@
     <ClInclude Include="cpp\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cpp\comutil.cpp" />
     <ClCompile Include="cpp\environment.cpp" />
     <ClCompile Include="cpp\handler.cpp" />
     <ClCompile Include="cpp\main.cpp" />
@@ -90,6 +92,10 @@
     <IncludePath>C:\Users\유덕남\git\node-ole\node_modules\nan;C:\Users\yoo2001818\.node-gyp\8.9.1\include\node;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\yoo2001818\.node-gyp\8.9.1\x64;$(LibraryPath)</LibraryPath>
     <ExcludePath>C:\Users\yoo2001818\.node-gyp\8.9.1\include\node;$(ExcludePath)</ExcludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Users\yoo2001818\.node-gyp\8.9.1\include\node;C:\Users\yoo2001818\git\node-ole\node_modules\nan;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\yoo2001818\.node-gyp\8.9.1\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

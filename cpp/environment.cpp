@@ -8,6 +8,7 @@ static std::vector<node_ole::Environment *> instances;
 namespace node_ole {
 	Environment::Environment() {
 		// Create both side of handle.
+		nodeHandle.data = this;
 		uv_loop_t * loop = uv_default_loop();
 		uv_async_init(loop, &nodeHandle, nodeHandler);
 		workerHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -93,9 +94,12 @@ namespace node_ole {
 		Nan::SetPrototypeMethod(tpl, "create", Create);
 
 		Nan::Set(target, Nan::New("Environment").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
+
+		Nan::Set(target, Nan::New("cleanup").ToLocalChecked(),
+			Nan::GetFunction(Nan::New<v8::FunctionTemplate>(Environment::Cleanup)).ToLocalChecked());
 	}
 
-	void Environment::Cleanup() {
+	NAN_METHOD(Environment::Cleanup) {
 		for (auto it = instances.begin(); it != instances.end(); it++) {
 			(*it)->close();
 		}

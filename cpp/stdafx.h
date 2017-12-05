@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef UNICODE
+#define UNICODE
+#endif
+
 #include <nan.h>
 #include <ole2.h>
 #include <comdef.h>

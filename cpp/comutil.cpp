@@ -5,9 +5,9 @@ namespace node_ole {
 		HRESULT result;
 		CLSID clsId;
 		// Retrieve CLSID
-		result = CLSIDFromProgID(name, &clsId);
+		result = CLSIDFromString(name, &clsId);
 		if FAILED(result) {
-			result = CLSIDFromString(name, &clsId);
+			result = CLSIDFromProgID(name, &clsId);
 			if FAILED(result) return CO_E_CLASSSTRING;
 		}
 		// Initialize OLE object
@@ -39,6 +39,7 @@ namespace node_ole {
 			readTypeInfo(typeInfo, info);
 			typeInfo->Release();
 		}
+		*output = info;
 		return S_OK;
 	}
 
@@ -50,15 +51,15 @@ namespace node_ole {
 
 		// Read type flags; ignore if non-dispatchable, or hidden or restricted.
 		WORD typeFlags = typeAttr->wTypeFlags;
-		if (!(typeFlags & TYPEFLAG_FDISPATCHABLE)) return;
-		if (typeFlags & TYPEFLAG_FRESTRICTED) return;
-		if (typeFlags & TYPEFLAG_FHIDDEN) return;
+		if (!(typeFlags & TYPEFLAG_FDISPATCHABLE)) return S_OK;
+		if (typeFlags & TYPEFLAG_FRESTRICTED) return S_OK;
+		if (typeFlags & TYPEFLAG_FHIDDEN) return S_OK;
 
 		// Read type name.
 		BSTR typeName;
 		result = typeInfo->GetDocumentation(MEMBERID_NIL, &typeName, NULL, NULL, NULL);
 		if FAILED(result) return result;
-		output->typeNames.push_back((std::wstring) _bstr_t(typeName, false));
+		output->typeNames.push_back(std::move((std::wstring) _bstr_t(typeName, false)));
 
 		// Read each defined functions.
 		LPFUNCDESC funcDesc;
@@ -76,8 +77,8 @@ namespace node_ole {
 			BSTR funcName;
 			BSTR funcDoc;
 			typeInfo->GetDocumentation(funcDesc->memid, &funcName, &funcDoc, NULL, NULL);
-			funcInfo.name = (std::wstring) _bstr_t(funcName, false);
-			funcInfo.description = (std::wstring) _bstr_t(funcDoc, false);
+			if (funcName != NULL) funcInfo.name = (std::wstring) _bstr_t(funcName, false);
+			if (funcDoc != NULL) funcInfo.description = (std::wstring) _bstr_t(funcDoc, false);
 			funcInfo.invokeKind = funcDesc->invkind;
 
 			// Read return type.
@@ -103,7 +104,13 @@ namespace node_ole {
 			free(namesArr);
 			typeInfo->ReleaseFuncDesc(funcDesc);
 
-			// TODO Put into info, etc.
+			// Put the info into the map.
+			auto found = output->info.find(funcInfo.name);
+			if (found != output->info.end()) {
+				found->second.push_back(std::move(funcInfo));
+			} else {
+				output->info[funcInfo.name] = { std::move(funcInfo) };
+			}
 		}
 
 		// Read implemented types.
@@ -124,7 +131,9 @@ namespace node_ole {
 	}
 
 	TypeInfo readElemDesc(LPELEMDESC elemDesc) {
-		// TODO
-		return TypeInfo();
+		TypeInfo info;
+		// TODO Read arrays, and pointers
+		info.type = elemDesc->tdesc.vt;
+		return info;
 	}
 }
