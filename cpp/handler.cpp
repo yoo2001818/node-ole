@@ -3,6 +3,7 @@
 #include "environment.h"
 #include "event.h"
 #include "comutil.h"
+#include "oleobject.h"
 
 namespace node_ole {
 	DWORD WINAPI workerHandler(LPVOID lpParam) {
@@ -27,8 +28,8 @@ namespace node_ole {
 			}
 			case WAIT_OBJECT_0 + 1: {
 				printf("COM Thread shutdown; %d\n", GetCurrentThreadId());
-				// TODO Handle exit
-				break;
+				CoUninitialize();
+				return 0;
 			}
 			case WAIT_OBJECT_0 + 2: {
 				MSG msg;
@@ -111,7 +112,12 @@ namespace node_ole {
 				if (r->result == S_OK) {
 					// Unwrap the information object into an object - the object should wrap a
 					// DispatchObject, while the function should contain FuncInfo.
-					resolver->Resolve(Nan::Undefined());
+					OLEObject * oleObj = new OLEObject(env, r->info);
+					auto tpl = Nan::New<v8::ObjectTemplate>();
+					tpl->SetInternalFieldCount(1);
+					auto object = tpl->NewInstance();
+					oleObj->bake(object);
+					resolver->Resolve(object);
 				} else {
 					// Throw an error.
 					_com_error err(r->result);

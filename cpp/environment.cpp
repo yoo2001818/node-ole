@@ -48,6 +48,14 @@ namespace node_ole {
 		uv_async_send(&nodeHandle);
 	}
 
+	void Environment::ref() {
+		Ref();
+	}
+
+	void Environment::unref() {
+		Unref();
+	}
+
 	NAN_METHOD(Environment::New) {
 		if (!info.IsConstructCall()) {
 			Nan::ThrowTypeError("This function must be called with 'new'.");

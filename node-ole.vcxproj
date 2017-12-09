@@ -24,6 +24,7 @@
     <ClInclude Include="cpp\event.h" />
     <ClInclude Include="cpp\handler.h" />
     <ClInclude Include="cpp\info.h" />
+    <ClInclude Include="cpp\oleObject.h" />
     <ClInclude Include="cpp\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
@@ -31,6 +32,7 @@
     <ClCompile Include="cpp\environment.cpp" />
     <ClCompile Include="cpp\handler.cpp" />
     <ClCompile Include="cpp\main.cpp" />
+    <ClCompile Include="cpp\oleObject.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

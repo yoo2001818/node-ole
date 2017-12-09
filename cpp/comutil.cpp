@@ -52,8 +52,8 @@ namespace node_ole {
 		// Read type flags; ignore if non-dispatchable, or hidden or restricted.
 		WORD typeFlags = typeAttr->wTypeFlags;
 		if (!(typeFlags & TYPEFLAG_FDISPATCHABLE)) return S_OK;
-		if (typeFlags & TYPEFLAG_FRESTRICTED) return S_OK;
-		if (typeFlags & TYPEFLAG_FHIDDEN) return S_OK;
+		// if (typeFlags & TYPEFLAG_FRESTRICTED) return S_OK;
+		// if (typeFlags & TYPEFLAG_FHIDDEN) return S_OK;
 
 		// Read type name.
 		BSTR typeName;
@@ -109,7 +109,7 @@ namespace node_ole {
 			if (found != output->info.end()) {
 				found->second.push_back(std::move(funcInfo));
 			} else {
-				output->info[funcInfo.name] = { std::move(funcInfo) };
+				output->info[funcInfo.name] = { funcInfo };
 			}
 		}
 

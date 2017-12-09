@@ -6,7 +6,8 @@
         'cpp/main.cpp',
         'cpp/handler.cpp',
         'cpp/environment.cpp',
-		'cpp/comutil.cpp'
+		'cpp/comutil.cpp',
+		'cpp/oleobject.cpp'
       ],
       'dependencies': [
       ],

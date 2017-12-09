@@ -33,6 +33,9 @@
     <ClInclude Include="cpp\comutil.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="cpp\oleObject.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cpp\main.cpp">
@@ -45,6 +48,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="cpp\comutil.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="cpp\oleObject.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

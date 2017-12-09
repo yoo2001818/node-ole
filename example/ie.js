@@ -1,11 +1,10 @@
-const ole = require('../src');
-
-console.log(ole);
-console.log(ole.create);
-// ole.create('InternetExplorer.Application')
-ole.create('{8DEC7B3B-3332-4B59-AF2B-DDEBF6419DD7}')
+const nativeModule = require('../build/Release/node_ole');
+const environment = new nativeModule.Environment();
+environment.create('InternetExplorer.Application')
+// ole.create('{8DEC7B3B-3332-4B59-AF2B-DDEBF6419DD7}')
 .then(v => {
     console.log(v);
+    nativeModule.cleanup();
 }, e => console.error(e));
 
 /*

@@ -18,6 +18,9 @@ namespace node_ole {
 		void pushRequest(std::unique_ptr<Request> req);
 		void pushResponse(std::unique_ptr<Response> res);
 
+		void ref();
+		void unref();
+
 		HANDLE workerThread;
 		DWORD workerId;
 
