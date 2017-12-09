@@ -7,6 +7,7 @@
         'cpp/handler.cpp',
         'cpp/environment.cpp',
 		'cpp/comutil.cpp',
+		'cpp/nodeutil.cpp',
 		'cpp/oleobject.cpp'
       ],
       'dependencies': [

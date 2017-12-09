@@ -1,4 +1,5 @@
 #include "oleobject.h"
+#include "nodeutil.h"
 
 namespace node_ole {
 	OLEObject::OLEObject(Environment * env, DispatchInfo * dispInfo) : env(env), dispInfo(dispInfo) {
@@ -23,6 +24,7 @@ namespace node_ole {
 			for (auto iter = list.begin(); iter != list.end(); iter++) {
 				// Set type information
 				auto obj = Nan::New<v8::Object>();
+				constructFuncInfo(*iter, obj);
 				typeArr->Set(count++, obj);
 			}
 			func->Set(Nan::New("types").ToLocalChecked(), typeArr);

@@ -31,6 +31,7 @@ namespace node_ole {
 		// Read type information and copy it into DispatchInfo.
 		DispatchInfo * info = new DispatchInfo();
 		info->ptr = lpunk;
+		info->dispPtr = disp;
 		UINT numTypes;
 		disp->GetTypeInfoCount(&numTypes);
 		for (UINT i = 0; i < numTypes; ++i) {
@@ -80,6 +81,8 @@ namespace node_ole {
 			if (funcName != NULL) funcInfo.name = (std::wstring) _bstr_t(funcName, false);
 			if (funcDoc != NULL) funcInfo.description = (std::wstring) _bstr_t(funcDoc, false);
 			funcInfo.invokeKind = funcDesc->invkind;
+
+			funcInfo.dispId = funcDesc->memid;
 
 			// Read return type.
 			funcInfo.returnType = readElemDesc(&(funcDesc->elemdescFunc));

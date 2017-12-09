@@ -29,7 +29,6 @@ namespace node_ole {
 
 	class FuncInfo {
 	public:
-		MEMBERID memId;
 		DISPID dispId;
 		INVOKEKIND invokeKind;
 		std::wstring name;
@@ -42,6 +41,7 @@ namespace node_ole {
 	class DispatchInfo {
 	public:
 		IUnknown * ptr;
+		IDispatch * dispPtr;
 		std::list<std::wstring> typeNames;
 		std::map<std::wstring, std::vector<FuncInfo>> info;
 		std::map<std::wstring, std::vector<FuncInfo>> eventInfo;
