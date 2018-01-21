@@ -7,8 +7,7 @@ namespace node_ole {
 
 	enum class PtrType {
 		Pointer,
-		CArray,
-		SafeArray
+		CArray
 	};
 
 	class PtrInfo {

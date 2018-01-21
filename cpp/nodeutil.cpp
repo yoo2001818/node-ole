@@ -106,10 +106,44 @@ namespace node_ole {
 		}
 	}
 	void constructTypeInfo(TypeInfo& typeInfo, v8::Local<v8::Object>& output) {
-		output->Set(Nan::New("type").ToLocalChecked(),
-			Nan::New(getVarType(typeInfo.type)).ToLocalChecked());
+		auto arrayDimensions = Nan::New<v8::Array>();
+		int arrayIndex = 0;
+		bool hasArray = false;
+		bool hasPointer = false;
+		// Parse pointer information - since Node.js side doesn't have any pointers,
+		// it'd be better to greatly simplify these.
+		// We'll just present the user with 1) whether a pointer is available
+		// 2) dimensions of an array, if any
+		// 3) arrayType
+		for (auto it = typeInfo.ptrs.begin(); it != typeInfo.ptrs.end(); ++it) {
+			switch ((*it).type) {
+			case PtrType::CArray: {
+				hasArray = true;
+				auto bounds = &((*it).bounds);
+				for (auto j = bounds->begin(); j != bounds->end(); ++j) {
+					arrayDimensions->Set(arrayIndex, Nan::New((uint32_t) *j));
+					arrayIndex++;
+				}
+				break;
+			}
+			case PtrType::Pointer:
+				hasPointer = true;
+				break;
+			}
+		}
 		output->Set(Nan::New("cType").ToLocalChecked(),
 			Nan::New(getVarCType(typeInfo.type)).ToLocalChecked());
+		output->Set(Nan::New("pointer").ToLocalChecked(), Nan::New(hasPointer));
+		if (hasArray) {
+			output->Set(Nan::New("type").ToLocalChecked(),
+				Nan::New("array").ToLocalChecked());
+			output->Set(Nan::New("arrayType").ToLocalChecked(),
+				Nan::New(getVarType(typeInfo.type)).ToLocalChecked());
+			output->Set(Nan::New("dimensions").ToLocalChecked(), arrayDimensions);
+		} else {
+			output->Set(Nan::New("type").ToLocalChecked(),
+				Nan::New(getVarType(typeInfo.type)).ToLocalChecked());
+		}
 	}
 	void constructArgInfo(ArgInfo& argInfo, v8::Local<v8::Object>& output) {
 		constructTypeInfo(argInfo.type, output);
