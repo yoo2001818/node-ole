@@ -1,15 +1,15 @@
 const environment = require('../src');
 environment.create('InternetExplorer.Application')
 // ole.create('{8DEC7B3B-3332-4B59-AF2B-DDEBF6419DD7}')
-.then(v => {
+  .then(v => {
     console.log(v);
     for (let key in v) {
-        v[key].types.forEach(type => {
-            console.log(type);
-        });
+      v[key].types.forEach(type => {
+        console.log(type);
+      });
     }
     environment.close();
-}, e => console.error(e));
+  }, e => console.error(e));
 
 /*
 (async function() {
