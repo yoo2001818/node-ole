@@ -17,46 +17,9 @@ namespace node_ole {
 		// Search for the matching function entry.
 		for (auto iter = funcInfos->begin(); iter != funcInfos->end(); iter++) {
 			// Match all 'input' entries. Iterate through current entry and exit if failed.
-			bool matchFailed = false;
-			auto funcArgs = iter->args;
-			{
-				auto i = args.begin();
-				auto j = funcArgs.begin();
-				while (j != funcArgs.end()) {
-					// Skip if current flag is not 'in'
-					auto flags = j->flags;
-					if (!(flags & PARAMFLAG_FIN)) {
-						j++;
-						continue;
-					}
-					// Handle if args has ended
-					if (i == args.end()) {
-						if (flags & PARAMFLAG_FOPT) {
-							j++;
-							continue;
-						} else {
-							// Failed
-							matchFailed = true;
-							break;
-						}
-					}
-					bool passed =
-						// Allow 'null' if the type is optional.
-						((flags & PARAMFLAG_FOPT) && i->type == VT_NULL) ||
-						// Run actual check
-						isTypeCompatiable(*i, j->type);
-					if (passed) {
-						if (i != args.end()) i++;
-						j++;
-						continue;
-					} else {
-						matchFailed = true;
-						break;
-					}
-				}
-			}
-			if (matchFailed) continue;
+			if (!isFuncCompatiable(args, *iter)) continue;
 			matched = true;
+			// Generate DISPPARAMS information using args and type info.
 			printf("%S\n", (wchar_t *)iter->name.data());
 			info.GetReturnValue().Set(Nan::New(true));
 			break;

@@ -8,7 +8,7 @@ environment.create('InternetExplorer.Application')
         // Format the type information.
         let result = `[${type.type}] ${type.name}`;
         let argInfo = type.args.map(v => {
-          return `${v.name}${v.optional ? '?' : ''}: ${v.type}`;
+          return `${v.out ? '[out] ' : ''}${v.pointer ? '*' : ''}${v.name}${v.optional ? '?' : ''}: ${v.type}`;
         });
         result += '(' + argInfo.join(', ') + ')';
         result += ': ' + type.returns.type;
