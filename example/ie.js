@@ -5,7 +5,14 @@ environment.create('InternetExplorer.Application')
     console.log(v);
     for (let key in v) {
       v[key].types.forEach(type => {
-        console.log(type);
+        // Format the type information.
+        let result = `[${type.type}] ${type.name}`;
+        let argInfo = type.args.map(v => {
+          return `${v.name}${v.optional ? '?' : ''}: ${v.type}`;
+        });
+        result += '(' + argInfo.join(', ') + ')';
+        result += ': ' + type.returns.type;
+        console.log(result);
       });
     }
     environment.close();
