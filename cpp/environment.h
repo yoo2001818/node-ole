@@ -13,6 +13,7 @@ namespace node_ole {
 		static NAN_MODULE_INIT(Init);
 		static NAN_METHOD(New);
 		static NAN_METHOD(Create);
+		static NAN_METHOD(Close);
 		static NAN_METHOD(Cleanup);
 
 		void pushRequest(std::unique_ptr<Request> req);

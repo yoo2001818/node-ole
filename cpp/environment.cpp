@@ -94,12 +94,20 @@ namespace node_ole {
 		info.GetReturnValue().Set(promise);
 	}
 
+	NAN_METHOD(Environment::Close) {
+		Environment * env = Unwrap<Environment>(info.Holder());
+		// TODO Ensure safety
+		env->close();
+		instances.erase(std::remove(instances.begin(), instances.end(), env), instances.end());
+	}
+
 	NAN_MODULE_INIT(Environment::Init) {
 		v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
 		tpl->SetClassName(Nan::New("Environment").ToLocalChecked());
 		tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
 		Nan::SetPrototypeMethod(tpl, "create", Create);
+		Nan::SetPrototypeMethod(tpl, "close", Close);
 
 		Nan::Set(target, Nan::New("Environment").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 
