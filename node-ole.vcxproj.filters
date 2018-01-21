@@ -33,7 +33,10 @@
     <ClInclude Include="cpp\comutil.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="cpp\oleObject.h">
+    <ClInclude Include="cpp\oleobject.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="cpp\nodeutil.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,7 +53,10 @@
     <ClCompile Include="cpp\comutil.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="cpp\oleObject.cpp">
+    <ClCompile Include="cpp\oleobject.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="cpp\nodeutil.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

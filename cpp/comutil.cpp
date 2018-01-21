@@ -135,8 +135,52 @@ namespace node_ole {
 
 	TypeInfo readElemDesc(LPELEMDESC elemDesc) {
 		TypeInfo info;
-		// TODO Read arrays, and pointers
-		info.type = elemDesc->tdesc.vt;
-		return info;
+		// We read the arrays, and pointers, and put them in a serialized std::vector.
+		// All pointers are recorded in pre-order, i.e. it gets added to vector at the end.
+		TYPEDESC * typeDesc = &(elemDesc->tdesc);
+		while (true) {
+			switch (typeDesc->vt) {
+			case VT_CARRAY: {
+				// CArray
+				PtrInfo ptrInfo;
+				ptrInfo.type = PtrType::CArray;
+				ARRAYDESC * arrayDesc = typeDesc->lpadesc;
+				USHORT dims = arrayDesc->cDims;
+				for (USHORT i = 0; i < dims; ++i) {
+					// TODO Store cElements
+					ptrInfo.bounds.push_back(arrayDesc->rgbounds[i].lLbound);
+				}
+				info.ptrs.push_back(std::move(ptrInfo));
+				typeDesc = &(arrayDesc->tdescElem);
+				continue;
+			}
+			case VT_ARRAY:
+			case VT_SAFEARRAY:
+				// SafeArray doesn't have fixed array types - just skip it.
+				info.type = VT_SAFEARRAY;
+				break;
+			case VT_PTR:
+				// Pointer
+				info.ptrs.push_back(PtrInfo{ PtrType::Pointer });
+				typeDesc = typeDesc->lptdesc;
+				continue;
+			case VT_USERDEFINED:
+				// Why
+			case VT_INT_PTR:
+				info.type = VT_INT;
+				info.ptrs.push_back(PtrInfo{ PtrType::Pointer });
+				break;
+			case VT_UINT_PTR:
+				info.type = VT_UINT;
+				info.ptrs.push_back(PtrInfo{ PtrType::Pointer });
+				break;
+			case VT_BYREF:
+				// TODO I have no idea what this does
+			default:
+				info.type = typeDesc->vt;
+				break;
+			}
+			return info;
+		}
 	}
 }

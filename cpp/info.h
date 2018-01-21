@@ -2,6 +2,9 @@
 #include "stdafx.h"
 
 namespace node_ole {
+
+	class DispatchInfo;
+
 	enum class PtrType {
 		Pointer,
 		CArray,
@@ -18,6 +21,7 @@ namespace node_ole {
 	public:
 		VARTYPE type;
 		std::vector<PtrInfo> ptrs;
+		std::shared_ptr<DispatchInfo> ref;
 	};
 
 	class ArgInfo {

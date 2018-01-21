@@ -12,40 +12,81 @@ namespace node_ole {
 	}
 	char * getVarType(VARTYPE varType) {
 		switch (varType) {
-		case VT_EMPTY: return "empty";
+		case VT_EMPTY:
 		case VT_NULL: return "null";
-		case VT_I2: return "i2";
-		case VT_I4: return "i4";
-		case VT_R4: return "r4";
-		case VT_R8: return "r8";
+		case VT_CY: return "currency";
+		case VT_DATE: return "date";
+		case VT_BSTR: return "string";
+		case VT_UNKNOWN:
+		case VT_DISPATCH: return "object";
+		case VT_ERROR: return "error";
+		case VT_BOOL: return "boolean";
+		case VT_VARIANT: return "any";
+		case VT_DECIMAL:
+		case VT_R4:
+		case VT_R8: return "number";
+		case VT_I2:
+		case VT_I4:
+		case VT_I1:
+		case VT_UI1:
+		case VT_UI2:
+		case VT_UI4:
+		case VT_I8:
+		case VT_UI8:
+		case VT_INT:
+		case VT_UINT: return "integer";
+		case VT_VOID: return "void";
+		case VT_HRESULT: return "error";
+		case VT_PTR: return "pointer";
+		case VT_SAFEARRAY: return "array";
+		case VT_CARRAY: return "array";
+		case VT_USERDEFINED: return "any";
+		case VT_LPSTR: return "string";
+		case VT_LPWSTR: return "string";
+		case VT_RECORD: return "record";
+		case VT_INT_PTR:
+		case VT_UINT_PTR: return "integer";
+		case VT_ARRAY: return "array";
+		case VT_BYREF: return "byref";
+		default: return "unregistered";
+		}
+	}
+	char * getVarCType(VARTYPE varType) {
+		switch (varType) {
+		case VT_EMPTY: return "EMPTY";
+		case VT_NULL: return "NULL";
+		case VT_I2: return "I2";
+		case VT_I4: return "I4";
+		case VT_R4: return "R4";
+		case VT_R8: return "R8";
 		case VT_CY: return "CURRENCY";
 		case VT_DATE: return "DATE";
 		case VT_BSTR: return "BSTR";
-		case VT_DISPATCH: return "IDispatch";
-		case VT_ERROR: return "SCODE";
-		case VT_BOOL: return "bool";
+		case VT_DISPATCH: return "DISPATCH";
+		case VT_ERROR: return "ERROR";
+		case VT_BOOL: return "BOOL";
 		case VT_VARIANT: return "VARIANT";
-		case VT_UNKNOWN: return "IUnknown";
-		case VT_DECIMAL: return "decimal";
-		case VT_I1: return "i1";
-		case VT_UI1: return "ui1";
-		case VT_UI2: return "ui2";
-		case VT_UI4: return "ui4";
-		case VT_I8: return "i8";
-		case VT_UI8: return "ui8";
-		case VT_INT: return "int";
-		case VT_UINT: return "uint";
-		case VT_VOID: return "void";
+		case VT_UNKNOWN: return "UNKNOWN";
+		case VT_DECIMAL: return "DECIMAL";
+		case VT_I1: return "I1";
+		case VT_UI1: return "UI1";
+		case VT_UI2: return "UI2";
+		case VT_UI4: return "UI4";
+		case VT_I8: return "I8";
+		case VT_UI8: return "UI8";
+		case VT_INT: return "INT";
+		case VT_UINT: return "UINT";
+		case VT_VOID: return "VOID";
 		case VT_HRESULT: return "HRESULT";
-		case VT_PTR: return "pointer";
-		case VT_SAFEARRAY: return "safearray";
-		case VT_CARRAY: return "carray";
-		case VT_USERDEFINED: return "user defined";
-		case VT_LPSTR: return "char *";
-		case VT_LPWSTR: return "w_str *";
-		case VT_RECORD: return "record";
-		case VT_INT_PTR: return "int *";
-		case VT_UINT_PTR: return "uint *";
+		case VT_PTR: return "PTR";
+		case VT_SAFEARRAY: return "SAFEARRAY";
+		case VT_CARRAY: return "CARRAY";
+		case VT_USERDEFINED: return "USERDEFINED";
+		case VT_LPSTR: return "LPSTR";
+		case VT_LPWSTR: return "LPWSTR";
+		case VT_RECORD: return "RECORD";
+		case VT_INT_PTR: return "INT_PTR";
+		case VT_UINT_PTR: return "UINT_PTR";
 		/*
 		case VT_FILETIME: return "empty";
 		case VT_BLOB: return "empty";
@@ -55,18 +96,20 @@ namespace node_ole {
 		case VT_STORED_OBJECT: return "empty";
 		case VT_BLOB_OBJECT: return "empty";
 		*/
-		case VT_CF: return "empty";
-		case VT_CLSID: return "empty";
-		case VT_VERSIONED_STREAM: return "empty";
-		case VT_VECTOR: return "empty";
-		case VT_ARRAY: return "empty";
-		case VT_BYREF: return "empty";
-		default: return "unknown";
+		case VT_CF: return "CF";
+		case VT_CLSID: return "CLSID";
+		case VT_VERSIONED_STREAM: return "VERSIONED_STREAM";
+		case VT_VECTOR: return "VECTOR";
+		case VT_ARRAY: return "ARRAY";
+		case VT_BYREF: return "BYREF";
+		default: return "unregistered";
 		}
 	}
 	void constructTypeInfo(TypeInfo& typeInfo, v8::Local<v8::Object>& output) {
 		output->Set(Nan::New("type").ToLocalChecked(),
 			Nan::New(getVarType(typeInfo.type)).ToLocalChecked());
+		output->Set(Nan::New("cType").ToLocalChecked(),
+			Nan::New(getVarCType(typeInfo.type)).ToLocalChecked());
 	}
 	void constructArgInfo(ArgInfo& argInfo, v8::Local<v8::Object>& output) {
 		constructTypeInfo(argInfo.type, output);
@@ -76,7 +119,7 @@ namespace node_ole {
 			Nan::New<v8::Boolean>(argInfo.flags & PARAMFLAG_FIN));
 		output->Set(Nan::New("out").ToLocalChecked(),
 			Nan::New<v8::Boolean>(argInfo.flags & PARAMFLAG_FOUT));
-		output->Set(Nan::New("retval").ToLocalChecked(),
+		output->Set(Nan::New("retVal").ToLocalChecked(),
 			Nan::New<v8::Boolean>(argInfo.flags & PARAMFLAG_FRETVAL));
 		output->Set(Nan::New("optional").ToLocalChecked(),
 			Nan::New<v8::Boolean>(argInfo.flags & PARAMFLAG_FOPT));
@@ -91,21 +134,35 @@ namespace node_ole {
 			Nan::New((uint16_t *) funcInfo.description.data()).ToLocalChecked());
 		output->Set(Nan::New("type").ToLocalChecked(), 
 			Nan::New(getInvokeKind(funcInfo.invokeKind)).ToLocalChecked());
-		{
-			auto obj = Nan::New<v8::Object>();
-			constructTypeInfo(funcInfo.returnType, obj);
-			output->Set(Nan::New("returns").ToLocalChecked(), obj);
-		}
+		bool hasRetVal = false;
 		{
 			auto arr = Nan::New<v8::Array>();
+			auto arrC = Nan::New<v8::Array>();
 			int index = 0;
+			int indexC = 0;
 			for (auto it = funcInfo.args.begin(); it != funcInfo.args.end(); it++) {
 				auto obj = Nan::New<v8::Object>();
 				constructArgInfo(*it, obj);
-				arr->Set(index, obj);
-				index++;
+				USHORT flags = (*it).flags;
+				if (flags & PARAMFLAG_FRETVAL) {
+					hasRetVal = true;
+					output->Set(Nan::New("returns").ToLocalChecked(), obj);
+				}
+				arrC->Set(indexC, obj);
+				indexC++;
+				if (flags & PARAMFLAG_FIN || !(flags & PARAMFLAG_FOUT || flags & PARAMFLAG_FRETVAL)) {
+					arr->Set(index, obj);
+					index++;
+				}
 			}
 			output->Set(Nan::New("args").ToLocalChecked(), arr);
+			output->Set(Nan::New("cArgs").ToLocalChecked(), arrC);
+		}
+		{
+			auto obj = Nan::New<v8::Object>();
+			constructTypeInfo(funcInfo.returnType, obj);
+			if (!hasRetVal) output->Set(Nan::New("returns").ToLocalChecked(), obj);
+			output->Set(Nan::New("cReturns").ToLocalChecked(), obj);
 		}
 	}
 }

@@ -62,7 +62,7 @@ namespace node_ole {
 				std::wcout << r->name << std::endl;
 				// Initialize COM
 				LPUNKNOWN lpunk;
-				DispatchInfo * dispatchInfo;
+				DispatchInfo * dispatchInfo = nullptr;
 				HRESULT result;
 				result = initObject(r->name.data(), &lpunk);
 				if SUCCEEDED(result) {
