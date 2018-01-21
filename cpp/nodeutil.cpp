@@ -184,7 +184,7 @@ namespace node_ole {
 				}
 				arrC->Set(indexC, obj);
 				indexC++;
-				if (flags & PARAMFLAG_FIN || !(flags & PARAMFLAG_FOUT || flags & PARAMFLAG_FRETVAL)) {
+				if (flags & PARAMFLAG_FIN) {
 					arr->Set(index, obj);
 					index++;
 				}
@@ -197,6 +197,90 @@ namespace node_ole {
 			constructTypeInfo(funcInfo.returnType, obj);
 			if (!hasRetVal) output->Set(Nan::New("returns").ToLocalChecked(), obj);
 			output->Set(Nan::New("cReturns").ToLocalChecked(), obj);
+		}
+	}
+	void getArgType(v8::Local<v8::Value>& value, JSTypeInfo& output) {
+		// Determine type of argument. Let's ignore BooleanObject, etc.
+		// Actual conversion is done later.
+		if (value->IsNullOrUndefined()) {
+			output.type = VT_NULL;
+		}
+		else if (value->IsArray()) {
+			auto arr = v8::Handle<v8::Array>::Cast(value);
+			output.dimensions += 1;
+			getArgType(arr->Get(0), output);
+		}
+		else if (value->IsBoolean()) {
+			output.type = VT_BOOL;
+		}
+		else if (value->IsDate()) {
+			output.type = VT_DATE;
+		}
+		else if (value->IsNumber()) {
+			output.type = VT_R8;
+		}
+		else if (value->IsString()) {
+			output.type = VT_BSTR;
+		}
+		else {
+			Nan::ThrowTypeError("Unsupported type passed to node-ole.");
+		}
+	}
+	std::vector<JSTypeInfo> getArgsType(Nan::NAN_METHOD_ARGS_TYPE& funcArgs) {
+		// Convert the arguments to type information for pattern matching.
+		std::vector<JSTypeInfo> output;
+		for (int i = 0; i < funcArgs.Length(); ++i) {
+			JSTypeInfo type;
+			getArgType(funcArgs[i], type);
+			output.push_back(type);
+		}
+		return output;
+	}
+	bool isTypeCompatiable(JSTypeInfo& jsInfo, TypeInfo& type) {
+		// Handle arrays first - except for VARIANT and SAFEARRAY, we must check
+		// if array dimension matches
+		if (type.type == VT_VARIANT) return true;
+		if (type.type == VT_SAFEARRAY) return jsInfo.dimensions > 0;
+		auto remainingDimensions = jsInfo.dimensions;
+		for (auto i = type.ptrs.begin(); i != type.ptrs.end(); ++i) {
+			if (i->type != PtrType::CArray) continue;
+			remainingDimensions -= i->bounds.size();
+			if (remainingDimensions < 0) return false;
+		}
+		if (remainingDimensions != 0) return false;
+		switch (type.type) {
+			case VT_EMPTY:
+			case VT_NULL:
+			case VT_VOID:
+				return jsInfo.type == VT_NULL;
+			case VT_DATE:
+				return jsInfo.type == VT_DATE;
+			case VT_BSTR:
+			case VT_LPSTR:
+			case VT_LPWSTR:
+				return jsInfo.type == VT_BSTR;
+			// case VT_UNKNOWN:
+			// case VT_DISPATCH: return "object";
+			// case VT_ERROR: return "error";
+			case VT_BOOL:
+				return jsInfo.type == VT_BOOL;
+			case VT_DECIMAL:
+			case VT_CY:
+			case VT_R4:
+			case VT_R8:
+			case VT_I2:
+			case VT_I4:
+			case VT_I1:
+			case VT_UI1:
+			case VT_UI2:
+			case VT_UI4:
+			case VT_I8:
+			case VT_UI8:
+			case VT_INT:
+			case VT_UINT:
+				return jsInfo.type == VT_R8;
+			default:
+				return false;
 		}
 	}
 }

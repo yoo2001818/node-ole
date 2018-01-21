@@ -2,12 +2,12 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerCommand>C:\Program Files\nodejs\node.exe</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>C:\Users\yoo2001818\git\node-ole\example\ie.js</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>C:\Users\yoo2001818\git\node-ole\example\wshShell.js</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommand>C:\Program Files\nodejs\node.exe</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>C:\Users\yoo2001818\git\node-ole\example\ie.js</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>C:\Users\yoo2001818\git\node-ole\example\wshShell.js</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
