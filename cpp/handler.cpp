@@ -82,6 +82,18 @@ namespace node_ole {
 			}
 			case RequestType::Invoke: {
 				RequestInvoke * r = static_cast<RequestInvoke*>(req.get());
+				// Invoke the dispatch object
+				DISPPARAMS * params = r->params;
+				VARIANT output;
+				EXCEPINFO excepInfo;
+				UINT argErr;
+				HRESULT result = S_OK;
+				result = r->dispatch->Invoke(r->funcInfo->dispId, IID_NULL, NULL,
+					r->funcInfo->invokeKind, r->params, &output, &excepInfo, &argErr);
+				_com_error err(result);
+				printf("args: %d\n", argErr);
+				printf("%X\n", err.Error());
+				std::wcout << L"Error: " << err.ErrorMessage() << '\n';
 				break;
 			}
 			case RequestType::GC: {

@@ -15,6 +15,6 @@ const environment = require('../src');
     });
   }
   console.log(wshShell.Popup('Hello, world on node-ole!', true, 'Hello!', 16));
-  environment.close();
+  // environment.close();
 })()
   .catch(v => console.error(v));

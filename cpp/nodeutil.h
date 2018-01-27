@@ -19,6 +19,7 @@ namespace node_ole {
 		VARIANT * output);
 	void constructDispParam(v8::Local<v8::Value>& value, TypeInfo& type,
 		VARIANTARG * output);
+	void constructEmptyDispParam(TypeInfo& type, VARIANTARG * output);
 	void constructDispParams(Nan::NAN_METHOD_ARGS_TYPE& args, FuncInfo& funcInfo,
-		DISPPARAMS& output);
+		DISPPARAMS * output);
 }

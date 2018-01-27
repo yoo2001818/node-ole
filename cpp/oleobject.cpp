@@ -12,6 +12,9 @@ namespace node_ole {
 	NAN_METHOD(OLEObject::Invoke) {
 		auto data = v8::Handle<v8::External>::Cast(info.Data());
 		auto funcInfos = (std::vector<FuncInfo> *) data->Value();
+		OLEObject * ole = Unwrap<OLEObject>(info.Holder());
+		Environment * env = ole->env;
+		DispatchInfo * dispInfo = ole->dispInfo;
 		auto args = getArgsType(info);
 		bool matched = false;
 		// Search for the matching function entry.
@@ -19,9 +22,27 @@ namespace node_ole {
 			// Match all 'input' entries. Iterate through current entry and exit if failed.
 			if (!isFuncCompatiable(args, *iter)) continue;
 			matched = true;
+
 			// Generate DISPPARAMS information using args and type info.
+			DISPPARAMS * params = new DISPPARAMS();
+			constructDispParams(info, *iter, params);
+
+			// Create Promise object.
+			v8::Local<v8::Promise::Resolver> resolver = v8::Promise::Resolver::New(info.GetIsolate());
+			v8::Local<v8::Promise> promise = resolver->GetPromise();
+			ResolverPersistent * deferred = new ResolverPersistent(resolver);
+
+			// Create event object, then push it.
+			std::unique_ptr<RequestInvoke> req = std::make_unique<RequestInvoke>();
+			req->deferred = deferred;
+			req->params = params;
+			req->funcInfo = &(*iter);
+			req->dispatch = dispInfo->dispPtr;
+
+			env->pushRequest(std::move(req));
+
 			printf("%S\n", (wchar_t *)iter->name.data());
-			info.GetReturnValue().Set(Nan::New(true));
+			info.GetReturnValue().Set(promise);
 			break;
 		}
 		if (!matched) {

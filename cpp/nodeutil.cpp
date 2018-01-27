@@ -321,10 +321,13 @@ namespace node_ole {
 			output->vt = VT_NULL;
 			break;
 		case VT_CY: {
-			// Although COM supports currency format, we don't - we just convert
-			// it to 64bit integer.
-			if (type & VT_BYREF) output->pcyVal = new CY{ value->IntegerValue };
-			else output->cyVal = value->IntegerValue;
+			if (type & VT_BYREF) {
+				output->pcyVal = new CY();
+				VarCyFromR8(value->NumberValue(), output->pcyVal);
+			}
+			else {
+				VarCyFromR8(value->NumberValue(), &(output->cyVal));
+			}
 			break;
 		}
 		case VT_DATE: {
@@ -387,78 +390,85 @@ namespace node_ole {
 			}
 		}
 		case VT_DECIMAL: {
-			if (type & VT_BYREF) output->pdecVal = new DECIMAL(value->NumberValue);
-			else output->decVal = DECIMAL(value->NumberValue);
+			if (type & VT_BYREF) {
+				output->pdecVal = new DECIMAL();
+				VarDecFromR8(value->NumberValue(), output->pdecVal);
+			} 
+			else {
+				VarDecFromR8(value->NumberValue(), &(output->decVal));
+			}
 			break;
 		}
 		case VT_R4: {
-			if (type & VT_BYREF) output->pfltVal = new float{ (float)value->NumberValue };
-			else output->fltVal = (float)value->NumberValue;
+			if (type & VT_BYREF) output->pfltVal = new float{ (float)value->NumberValue() };
+			else output->fltVal = (float)value->NumberValue();
 			break;
 		}
 		case VT_R8: {
-			if (type & VT_BYREF)output->pdblVal = new double{ value->NumberValue };
-			else output->dblVal = value->NumberValue;
+			if (type & VT_BYREF)output->pdblVal = new double{ value->NumberValue() };
+			else output->dblVal = value->NumberValue();
 			break;
 		}
 		case VT_I1: {
-			if (type & VT_BYREF)output->pcVal = new char{ value->Int32Value };
-			else output->cVal = value->Int32Value;
+			if (type & VT_BYREF)output->pcVal = new char{ (char) value->Int32Value() };
+			else output->cVal = value->Int32Value();
 			break;
 		}
 		case VT_I2: {
-			if (type & VT_BYREF)output->piVal = new short{ value->Int32Value };
-			else output->iVal = value->Int32Value;
+			if (type & VT_BYREF)output->piVal = new short{ (short) value->Int32Value() };
+			else output->iVal = value->Int32Value();
 			break;
 		}
 		case VT_I4: {
-			if (type & VT_BYREF)output->plVal = new long{ value->Int32Value };
-			else output->lVal = value->Int32Value;
+			if (type & VT_BYREF)output->plVal = new long{ value->Int32Value() };
+			else output->lVal = value->Int32Value();
 			break;
 		}
 		case VT_I8: {
-			if (type & VT_BYREF)output->pllVal = new long long{ value->IntegerValue };
-			else output->llVal = value->IntegerValue;
+			if (type & VT_BYREF)output->pllVal = new long long{ value->IntegerValue() };
+			else output->llVal = value->IntegerValue();
 			break;
 		}
 		case VT_UI1: {
-			if (type & VT_BYREF)output->pbVal = new unsigned char{ value->Uint32Value };
-			else output->bVal = value->Int32Value;
+			if (type & VT_BYREF)output->pbVal = new unsigned char{ (unsigned char) value->Uint32Value() };
+			else output->bVal = value->Int32Value();
 			break;
 		}
 		case VT_UI2: {
-			if (type & VT_BYREF)output->puiVal = new unsigned short{ value->Uint32Value };
-			else output->uiVal = value->Int32Value;
+			if (type & VT_BYREF)output->puiVal = new unsigned short{ (unsigned short) value->Uint32Value() };
+			else output->uiVal = value->Int32Value();
 			break;
 		}
 		case VT_UI4: {
-			if (type & VT_BYREF)output->pulVal = new unsigned long{ value->Uint32Value };
-			else output->ulVal = value->IntegerValue;
+			if (type & VT_BYREF)output->pulVal = new unsigned long{ (unsigned long) value->Uint32Value() };
+			else output->ulVal = value->IntegerValue();
 			break;
 		}
 		case VT_UI8: {
-			if (type & VT_BYREF)output->pullVal = new unsigned long long{ value->IntegerValue };
-			else output->ullVal = value->IntegerValue;
+			if (type & VT_BYREF)output->pullVal = new unsigned long long{ (unsigned long long) value->IntegerValue() };
+			else output->ullVal = value->IntegerValue();
 			break;
 		}
 		case VT_INT: {
-			if (type & VT_BYREF)output->pintVal = new INT{ value->IntegerValue };
-			else output->intVal = value->IntegerValue;
+			if (type & VT_BYREF)output->pintVal = new INT{ (INT) value->IntegerValue() };
+			else output->intVal = value->IntegerValue();
 			break;
 		}
 		case VT_UINT: {
-			if (type & VT_BYREF)output->puintVal = new UINT{ value->IntegerValue };
-			else output->uintVal = value->IntegerValue;
+			if (type & VT_BYREF)output->puintVal = new UINT{ (UINT) value->IntegerValue() };
+			else output->uintVal = value->IntegerValue();
 			break;
 		}
 		case VT_SAFEARRAY: {
 			// Do nothing for now....
 		}
+		case VT_ERROR:
+		case VT_HRESULT: {
+
+		}
 		}
 	}
-	void constructDispParam(v8::Local<v8::Value>& value, TypeInfo& type,
-		VARIANTARG * output
-	) {
+	VARTYPE getDispType(TypeInfo& type) {
 		// The internal format supports many formats, however,
 		// VARIANT only supports one level of pointer indirection -
 		// we just check for presence of pointer in types.
@@ -469,26 +479,66 @@ namespace node_ole {
 		bool hasPointer = false;
 		bool hasArray = false;
 		bool hasArrayPointer = false;
-		
+
 		for (auto i = type.ptrs.begin(); i != type.ptrs.end(); i++) {
 			switch (i->type) {
-				case PtrType::CArray:
-					hasArray = true;
-					break;
-				case PtrType::Pointer:
-					if (hasArray) hasArrayPointer = true;
-					else hasPointer = true;
-					break;
+			case PtrType::CArray:
+				hasArray = true;
+				break;
+			case PtrType::Pointer:
+				if (hasArray) hasArrayPointer = true;
+				else hasPointer = true;
+				break;
 			}
 		}
 		if (type.type == VT_SAFEARRAY) hasArray = true;
+
 		// We shouldn't create other VARIANT unless VT_BYREF is specified. (right?)
 		// For the time being, we'll only support non-array objects.
-		writeDispParam(value, type.type & (hasPointer ? VT_BYREF : 0), output);
+		return type.type | (hasPointer ? VT_BYREF : 0);
+	}
+	void constructDispParam(v8::Local<v8::Value>& value, TypeInfo& type,
+		VARIANTARG * output
+	) {
+		writeDispParam(value, getDispType(type), output);
+	}
+	void constructEmptyDispParam(TypeInfo& type, VARIANTARG * output) {
+		// Create an empty disp param from the type.
+		// TODO
+		v8::Local<v8::Value> value = Nan::New(0);
+		constructDispParam(value, type, output);
 	}
 	void constructDispParams(Nan::NAN_METHOD_ARGS_TYPE& args, FuncInfo& funcInfo,
-		DISPPARAMS& output
+		DISPPARAMS * output
 	) {
-
+		// Process funcInfo types and place onto DISPPARAMS.
+		// Calculate the count of arguments, excluding optional values if necessary.
+		int argsCount = 0;
+		int inputArgsCount = 0;
+		for (auto it = funcInfo.args.begin(); it != funcInfo.args.end(); it++) {
+			if (it->flags & PARAMFLAG_FIN) {
+				if (args.Length() <= inputArgsCount) break;
+				inputArgsCount++;
+			}
+			argsCount++;
+		}
+		printf("argsCount: %d, inputArgs: %d\n", argsCount, inputArgsCount);
+		// Create new dispparams.
+		output->cArgs = argsCount;
+		output->rgvarg = new VARIANTARG[argsCount];
+		int i = 0;
+		int inputArgsAcc = 0;
+		for (auto it = funcInfo.args.begin(); it != funcInfo.args.end() && i < argsCount; it++, i++) {
+			VARIANTARG * arg = output->rgvarg + i;
+			printf("aa: %d %d %d %d\n", i, it->type.type, getDispType(it->type), it->flags);
+			if (it->flags & PARAMFLAG_FIN) {
+				if (inputArgsAcc >= inputArgsCount) continue;
+				constructDispParam(args[inputArgsAcc], it->type, arg);
+				inputArgsAcc++;
+			} else {
+				constructEmptyDispParam(it->type, arg);
+			}
+		}
+		printf("acc: %d, inputAcc: %d\n", i, inputArgsAcc);
 	}
 }
