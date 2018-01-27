@@ -360,34 +360,42 @@ namespace node_ole {
 			break;
 		}
 		case VT_VARIANT: {
+			// Create new variant object
+			VARIANT * outputPtr = output;
+			if (type & VT_BYREF) {
+				outputPtr = new VARIANT();
+				output->pvarVal = outputPtr;
+			}
 			// Determine the type from JS side
 			if (value->IsNullOrUndefined()) {
-				writeDispParam(value, VT_NULL, output);
+				writeDispParam(value, VT_NULL, outputPtr);
 			}
 			else if (value->IsArray()) {
 				// TODO
 			}
 			else if (value->IsBoolean()) {
-				writeDispParam(value, VT_BOOL, output);
+				writeDispParam(value, VT_BOOL, outputPtr);
 			}
 			else if (value->IsDate()) {
-				writeDispParam(value, VT_DATE, output);
+				writeDispParam(value, VT_DATE, outputPtr);
 			}
 			else if (value->IsInt32()) {
-				writeDispParam(value, VT_I4, output);
+				writeDispParam(value, VT_I4, outputPtr);
 			}
 			else if (value->IsUint32()) {
-				writeDispParam(value, VT_UI4, output);
+				writeDispParam(value, VT_UI4, outputPtr);
 			}
 			else if (value->IsNumber()) {
-				writeDispParam(value, VT_R8, output);
+				writeDispParam(value, VT_R8, outputPtr);
 			}
 			else if (value->IsString()) {
-				writeDispParam(value, VT_BSTR, output);
+				writeDispParam(value, VT_BSTR, outputPtr);
 			}
 			else {
 				// Dunno
+				writeDispParam(value, VT_NULL, outputPtr);
 			}
+			break;
 		}
 		case VT_DECIMAL: {
 			if (type & VT_BYREF) {
@@ -520,6 +528,7 @@ namespace node_ole {
 				if (args.Length() <= inputArgsCount) break;
 				inputArgsCount++;
 			}
+			if (it->flags & PARAMFLAG_FRETVAL) continue;
 			argsCount++;
 		}
 		printf("argsCount: %d, inputArgs: %d\n", argsCount, inputArgsCount);
@@ -529,15 +538,16 @@ namespace node_ole {
 		int i = 0;
 		int inputArgsAcc = 0;
 		for (auto it = funcInfo.args.begin(); it != funcInfo.args.end() && i < argsCount; it++, i++) {
-			VARIANTARG * arg = output->rgvarg + i;
+			VARIANTARG * arg = output->rgvarg + (argsCount - 1 - i);
 			printf("aa: %d %d %d %d\n", i, it->type.type, getDispType(it->type), it->flags);
-			if (it->flags & PARAMFLAG_FIN) {
-				if (inputArgsAcc >= inputArgsCount) continue;
+			if (it->flags & PARAMFLAG_FIN && inputArgsAcc < inputArgsCount) {
 				constructDispParam(args[inputArgsAcc], it->type, arg);
 				inputArgsAcc++;
 			} else {
+				printf("optional: %d", it->type.type);
 				constructEmptyDispParam(it->type, arg);
 			}
+			printf("res: %d\n", arg->vt);
 		}
 		printf("acc: %d, inputAcc: %d\n", i, inputArgsAcc);
 	}
