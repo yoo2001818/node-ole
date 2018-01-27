@@ -4,6 +4,7 @@
 #include "event.h"
 #include "comutil.h"
 #include "oleobject.h"
+#include "nodeutil.h"
 
 namespace node_ole {
 	DWORD WINAPI workerHandler(LPVOID lpParam) {
@@ -84,16 +85,21 @@ namespace node_ole {
 				RequestInvoke * r = static_cast<RequestInvoke*>(req.get());
 				// Invoke the dispatch object
 				DISPPARAMS * params = r->params;
-				VARIANT output;
+				VARIANT * output = new VARIANT();
 				EXCEPINFO excepInfo;
 				UINT argErr;
 				HRESULT result = S_OK;
 				result = r->dispatch->Invoke(r->funcInfo->dispId, IID_NULL, NULL,
-					r->funcInfo->invokeKind, r->params, &output, &excepInfo, &argErr);
-				_com_error err(result);
-				printf("args: %d\n", argErr);
-				printf("%X\n", err.Error());
-				std::wcout << L"Error: " << err.ErrorMessage() << '\n';
+					r->funcInfo->invokeKind, r->params, output, &excepInfo, &argErr);
+				// Send the response back to the node.
+				std::unique_ptr<ResponseInvoke> res = std::make_unique<ResponseInvoke>();
+				res->deferred = r->deferred;
+				res->returnValue = output;
+				res->params = params;
+				res->funcInfo = r->funcInfo;
+				res->result = result;
+
+				env->pushResponse(std::move(res));
 				break;
 			}
 			case RequestType::GC: {
@@ -142,7 +148,22 @@ namespace node_ole {
 				break;
 			}
 			case ResponseType::Invoke: {
+				Nan::HandleScope scope;
 				ResponseInvoke * r = static_cast<ResponseInvoke*>(res.get());
+				printf("Resolving ResponseInvoke\n");
+				auto resolver = Nan::New(*(r->deferred));
+				if (r->result == S_OK) {
+					// Resolve the returned object, and free the params
+					resolver->Resolve(readVariant(r->returnValue));
+				} else {
+					// Throw an error.
+					_com_error err(r->result);
+					printf("%X\n", err.Error());
+					resolver->Reject(Nan::Error(Nan::New((uint16_t *)err.ErrorMessage()).ToLocalChecked()));
+				}
+				v8::Isolate::GetCurrent()->RunMicrotasks();
+				r->deferred->Reset();
+				delete r->deferred;
 				break;
 			}
 			case ResponseType::Event: {

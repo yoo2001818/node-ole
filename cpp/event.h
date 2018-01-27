@@ -29,6 +29,7 @@ namespace node_ole {
 	public:
 		virtual ~ResponseInvoke() = default;
 		virtual ResponseType getType() { return ResponseType::Invoke; };
+		HRESULT result;
 		FuncInfo * funcInfo;
 		DISPPARAMS * params;
 		VARIANT * returnValue;

@@ -309,7 +309,7 @@ namespace node_ole {
 		}
 		return true;
 	}
-	void writeDispParam(v8::Local<v8::Value>& value, VARTYPE type,
+	void writeVariant(v8::Local<v8::Value>& value, VARTYPE type,
 		VARIANT * output
 	) {
 		// We shouldn't create other VARIANT unless VT_BYREF is specified. (right?)
@@ -368,32 +368,32 @@ namespace node_ole {
 			}
 			// Determine the type from JS side
 			if (value->IsNullOrUndefined()) {
-				writeDispParam(value, VT_NULL, outputPtr);
+				writeVariant(value, VT_NULL, outputPtr);
 			}
 			else if (value->IsArray()) {
 				// TODO
 			}
 			else if (value->IsBoolean()) {
-				writeDispParam(value, VT_BOOL, outputPtr);
+				writeVariant(value, VT_BOOL, outputPtr);
 			}
 			else if (value->IsDate()) {
-				writeDispParam(value, VT_DATE, outputPtr);
+				writeVariant(value, VT_DATE, outputPtr);
 			}
 			else if (value->IsInt32()) {
-				writeDispParam(value, VT_I4, outputPtr);
+				writeVariant(value, VT_I4, outputPtr);
 			}
 			else if (value->IsUint32()) {
-				writeDispParam(value, VT_UI4, outputPtr);
+				writeVariant(value, VT_UI4, outputPtr);
 			}
 			else if (value->IsNumber()) {
-				writeDispParam(value, VT_R8, outputPtr);
+				writeVariant(value, VT_R8, outputPtr);
 			}
 			else if (value->IsString()) {
-				writeDispParam(value, VT_BSTR, outputPtr);
+				writeVariant(value, VT_BSTR, outputPtr);
 			}
 			else {
 				// Dunno
-				writeDispParam(value, VT_NULL, outputPtr);
+				writeVariant(value, VT_NULL, outputPtr);
 			}
 			break;
 		}
@@ -505,16 +505,16 @@ namespace node_ole {
 		// For the time being, we'll only support non-array objects.
 		return type.type | (hasPointer ? VT_BYREF : 0);
 	}
-	void constructDispParam(v8::Local<v8::Value>& value, TypeInfo& type,
+	void constructVariant(v8::Local<v8::Value>& value, TypeInfo& type,
 		VARIANTARG * output
 	) {
-		writeDispParam(value, getDispType(type), output);
+		writeVariant(value, getDispType(type), output);
 	}
-	void constructEmptyDispParam(TypeInfo& type, VARIANTARG * output) {
+	void constructEmptyVariant(TypeInfo& type, VARIANTARG * output) {
 		// Create an empty disp param from the type.
 		// TODO
-		v8::Local<v8::Value> value = Nan::New(0);
-		constructDispParam(value, type, output);
+		v8::Local<v8::Value> value = Nan::Null();
+		constructVariant(value, type, output);
 	}
 	void constructDispParams(Nan::NAN_METHOD_ARGS_TYPE& args, FuncInfo& funcInfo,
 		DISPPARAMS * output
@@ -531,7 +531,6 @@ namespace node_ole {
 			if (it->flags & PARAMFLAG_FRETVAL) continue;
 			argsCount++;
 		}
-		printf("argsCount: %d, inputArgs: %d\n", argsCount, inputArgsCount);
 		// Create new dispparams.
 		output->cArgs = argsCount;
 		output->rgvarg = new VARIANTARG[argsCount];
@@ -539,16 +538,106 @@ namespace node_ole {
 		int inputArgsAcc = 0;
 		for (auto it = funcInfo.args.begin(); it != funcInfo.args.end() && i < argsCount; it++, i++) {
 			VARIANTARG * arg = output->rgvarg + (argsCount - 1 - i);
-			printf("aa: %d %d %d %d\n", i, it->type.type, getDispType(it->type), it->flags);
 			if (it->flags & PARAMFLAG_FIN && inputArgsAcc < inputArgsCount) {
-				constructDispParam(args[inputArgsAcc], it->type, arg);
+				constructVariant(args[inputArgsAcc], it->type, arg);
 				inputArgsAcc++;
 			} else {
-				printf("optional: %d", it->type.type);
-				constructEmptyDispParam(it->type, arg);
+				constructEmptyVariant(it->type, arg);
 			}
-			printf("res: %d\n", arg->vt);
 		}
-		printf("acc: %d, inputAcc: %d\n", i, inputArgsAcc);
+	}
+	v8::Local<v8::Value> readVariant(VARIANT * input) {
+		VARTYPE type = input->vt;
+		switch (type & (~VT_BYREF)) {
+		case VT_NULL:
+			return Nan::Null();
+		case VT_CY: {
+			double output;
+			if (type & VT_BYREF) VarR8FromCy(*(input->pcyVal), &output);
+			else VarR8FromCy(input->cyVal, &output);
+			return Nan::New(output);
+		}
+		case VT_DATE: {
+			// Whatever
+			if (type & VT_BYREF) return Nan::New(*(input->pdate));
+			return Nan::New(input->date);
+		}
+		case VT_BSTR: {
+			if (type & VT_BYREF) Nan::New((uint16_t *)*(input->pbstrVal)).ToLocalChecked();
+			return Nan::New((uint16_t *)input->bstrVal).ToLocalChecked();
+		}
+					  // case VT_UNKNOWN:
+					  // case VT_DISPATCH: return "object";
+		case VT_BOOL: {
+			if (type & VT_BYREF) return Nan::New<v8::Boolean>(*(input->pboolVal) == VARIANT_TRUE);
+			return Nan::New<v8::Boolean>(input->boolVal == VARIANT_TRUE);
+		}
+		case VT_VARIANT: {
+			if (type & VT_BYREF) return readVariant(input->pvarVal);
+			return Nan::Null();
+		}
+		case VT_DECIMAL: {
+			double output;
+			if (type & VT_BYREF) VarR8FromDec(input->pdecVal, &output);
+			else VarR8FromDec(&(input->decVal), &output);
+			return Nan::New(output);
+		}
+		case VT_R4: {
+			if (type & VT_BYREF) return Nan::New(*(input->pfltVal));
+			return Nan::New(input->fltVal);
+		}
+		case VT_R8: {
+			if (type & VT_BYREF) return Nan::New(*(input->pdblVal));
+			return Nan::New(input->dblVal);
+		}
+		case VT_I1: {
+			if (type & VT_BYREF) return Nan::New(*(input->pcVal));
+			return Nan::New(input->cVal);
+		}
+		case VT_I2: {
+			if (type & VT_BYREF) return Nan::New(*(input->piVal));
+			return Nan::New(input->iVal);
+		}
+		case VT_I4: {
+			if (type & VT_BYREF) return Nan::New(*(input->plVal));
+			return Nan::New(input->lVal);
+		}
+		case VT_I8: {
+			if (type & VT_BYREF) return Nan::New((double) *(input->pllVal));
+			return Nan::New((double)input->llVal);
+		}
+		case VT_UI1: {
+			if (type & VT_BYREF) return Nan::New(*(input->pbVal));
+			return Nan::New(input->bVal);
+		}
+		case VT_UI2: {
+			if (type & VT_BYREF) return Nan::New(*(input->puiVal));
+			return Nan::New(input->uiVal);
+		}
+		case VT_UI4: {
+			if (type & VT_BYREF) return Nan::New((double) *(input->pulVal));
+			return Nan::New((double)input->ulVal);
+		}
+		case VT_UI8: {
+			if (type & VT_BYREF) return Nan::New((double) *(input->pullVal));
+			return Nan::New((double)input->ullVal);
+		}
+		case VT_INT: {
+			if (type & VT_BYREF) return Nan::New(*(input->pintVal));
+			return Nan::New(input->intVal);
+		}
+		case VT_UINT: {
+			if (type & VT_BYREF) return Nan::New(*(input->puintVal));
+			return Nan::New(input->uintVal);
+		}
+		case VT_SAFEARRAY: {
+			// Do nothing for now....
+		}
+		case VT_ERROR:
+		case VT_HRESULT: {
+
+		}
+		}
+		return Nan::Null();
 	}
 }
