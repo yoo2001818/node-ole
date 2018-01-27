@@ -307,6 +307,7 @@ namespace node_ole {
 				return false;
 			}
 		}
+		if (i != args.end()) return false;
 		return true;
 	}
 	void writeVariant(v8::Local<v8::Value>& value, VARTYPE type,
@@ -544,6 +545,10 @@ namespace node_ole {
 			} else {
 				constructEmptyVariant(it->type, arg);
 			}
+		}
+		if (funcInfo.invokeKind == INVOKE_PROPERTYPUT) {
+			output->cNamedArgs = 1;
+			output->rgdispidNamedArgs = new DISPID(DISPID_PROPERTYPUT);
 		}
 	}
 	v8::Local<v8::Value> readVariant(VARIANT * input) {

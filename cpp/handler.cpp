@@ -17,13 +17,11 @@ namespace node_ole {
 		// Start COM environment
 		hresult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 		if FAILED(hresult) return 1;
-		printf("COM Thread initialized; %d\n", GetCurrentThreadId());
 		while (TRUE) {
 			switch (MsgWaitForMultipleObjectsEx(2, handles, INFINITE,
 				QS_ALLINPUT | QS_ALLPOSTMESSAGE, MWMO_INPUTAVAILABLE)) {
 			case WAIT_OBJECT_0: {
 				// Handle event queue
-				std::cout << "COM received!!!" << std::endl;
 				handleWorkerEvent(env);
 				break;
 			}
@@ -112,7 +110,6 @@ namespace node_ole {
 
 	void nodeHandler(uv_async_t * handle) {
 		Environment * env = (Environment *)handle->data;
-		printf("Node received!! \n");
 		while (true) {
 			std::unique_ptr<Response> res;
 			{
@@ -125,7 +122,6 @@ namespace node_ole {
 			case ResponseType::Create: {
 				Nan::HandleScope scope;
 				ResponseCreate * r = static_cast<ResponseCreate*>(res.get());
-				printf("Resolving ResponseCreate\n");
 				auto resolver = Nan::New(*(r->deferred));
 				if (r->result == S_OK) {
 					// Unwrap the information object into an object - the object should wrap a
@@ -139,7 +135,6 @@ namespace node_ole {
 				} else {
 					// Throw an error.
 					_com_error err(r->result);
-					printf("%X\n", err.Error());
 					resolver->Reject(Nan::Error(Nan::New((uint16_t *) err.ErrorMessage()).ToLocalChecked()));
 				}
 				v8::Isolate::GetCurrent()->RunMicrotasks();
@@ -150,7 +145,6 @@ namespace node_ole {
 			case ResponseType::Invoke: {
 				Nan::HandleScope scope;
 				ResponseInvoke * r = static_cast<ResponseInvoke*>(res.get());
-				printf("Resolving ResponseInvoke\n");
 				auto resolver = Nan::New(*(r->deferred));
 				if (r->result == S_OK) {
 					// Resolve the returned object, and free the params
@@ -158,7 +152,6 @@ namespace node_ole {
 				} else {
 					// Throw an error.
 					_com_error err(r->result);
-					printf("%X\n", err.Error());
 					resolver->Reject(Nan::Error(Nan::New((uint16_t *)err.ErrorMessage()).ToLocalChecked()));
 				}
 				v8::Isolate::GetCurrent()->RunMicrotasks();
