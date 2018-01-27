@@ -20,6 +20,7 @@ const environment = require('../src');
   setTimeout(() => ie.StatusText('Go to sleep'), 1000);
   console.log(await ie.Path());
   console.log(await ie.ReadyState());
+  console.log(await ie.Application());
   setTimeout(() => ie.Quit(), 10000);
 })()
   .catch(v => console.error(v));

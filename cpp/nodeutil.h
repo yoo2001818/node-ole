@@ -1,6 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "info.h"
+#include "environment.h"
 
 namespace node_ole {
 	void constructFuncInfo(FuncInfo& funcInfo, v8::Local<v8::Object>& output);
@@ -22,5 +23,7 @@ namespace node_ole {
 	void constructEmptyVariant(TypeInfo& type, VARIANTARG * output);
 	void constructDispParams(Nan::NAN_METHOD_ARGS_TYPE& args, FuncInfo& funcInfo,
 		DISPPARAMS * output);
-	v8::Local<v8::Value> readVariant(VARIANT * input);
+	v8::Local<v8::Value> readVariant(VARIANT * input, Environment& env);
+	void freeVariant(VARIANTARG * input);
+	void freeDispParams(DISPPARAMS * input);
 }

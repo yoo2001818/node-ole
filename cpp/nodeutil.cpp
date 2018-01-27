@@ -1,4 +1,5 @@
 #include "nodeutil.h"
+#include "oleobject.h"
 
 namespace node_ole {
 	char * getInvokeKind(INVOKEKIND invKind) {
@@ -551,7 +552,7 @@ namespace node_ole {
 			output->rgdispidNamedArgs = new DISPID(DISPID_PROPERTYPUT);
 		}
 	}
-	v8::Local<v8::Value> readVariant(VARIANT * input) {
+	v8::Local<v8::Value> readVariant(VARIANT * input, Environment& env) {
 		VARTYPE type = input->vt;
 		switch (type & (~VT_BYREF)) {
 		case VT_NULL:
@@ -571,14 +572,24 @@ namespace node_ole {
 			if (type & VT_BYREF) Nan::New((uint16_t *)*(input->pbstrVal)).ToLocalChecked();
 			return Nan::New((uint16_t *)input->bstrVal).ToLocalChecked();
 		}
-					  // case VT_UNKNOWN:
-					  // case VT_DISPATCH: return "object";
+		case VT_UNKNOWN:
+		case VT_DISPATCH: {
+			if (input->pdispVal == nullptr) {
+				return Nan::Null();
+			}
+			OLEObject * oleObj = new OLEObject(&env, (DispatchInfo *) input->pdispVal);
+			auto tpl = Nan::New<v8::ObjectTemplate>();
+			tpl->SetInternalFieldCount(1);
+			auto object = tpl->NewInstance();
+			oleObj->bake(object);
+			return object;
+		}
 		case VT_BOOL: {
 			if (type & VT_BYREF) return Nan::New<v8::Boolean>(*(input->pboolVal) == VARIANT_TRUE);
 			return Nan::New<v8::Boolean>(input->boolVal == VARIANT_TRUE);
 		}
 		case VT_VARIANT: {
-			if (type & VT_BYREF) return readVariant(input->pvarVal);
+			if (type & VT_BYREF) return readVariant(input->pvarVal, env);
 			return Nan::Null();
 		}
 		case VT_DECIMAL: {
@@ -636,7 +647,7 @@ namespace node_ole {
 			return Nan::New(input->uintVal);
 		}
 		case VT_SAFEARRAY: {
-			// Do nothing for now....
+			// TODO
 		}
 		case VT_ERROR:
 		case VT_HRESULT: {
@@ -644,5 +655,16 @@ namespace node_ole {
 		}
 		}
 		return Nan::Null();
+	}
+	void freeVariant(VARIANTARG * input) {
+		VariantClear(input);
+	}
+	void freeDispParams(DISPPARAMS * input) {
+		for (UINT i = 0; i < input->cArgs; ++i) {
+			freeVariant(input->rgvarg + i);
+		}
+		delete input->rgvarg;
+		if (input->cNamedArgs != 0) delete input->rgdispidNamedArgs;
+		delete input;
 	}
 }

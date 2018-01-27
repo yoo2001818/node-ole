@@ -58,7 +58,6 @@ namespace node_ole {
 			switch (req->getType()) {
 			case RequestType::Create: {
 				RequestCreate * r = static_cast<RequestCreate*>(req.get());
-				std::wcout << r->name << std::endl;
 				// Initialize COM
 				LPUNKNOWN lpunk;
 				DispatchInfo * dispatchInfo = nullptr;
@@ -89,6 +88,8 @@ namespace node_ole {
 				HRESULT result = S_OK;
 				result = r->dispatch->Invoke(r->funcInfo->dispId, IID_NULL, NULL,
 					r->funcInfo->invokeKind, r->params, output, &excepInfo, &argErr);
+				// Parse variant information.
+				parseVariantTypeInfo(output);
 				// Send the response back to the node.
 				std::unique_ptr<ResponseInvoke> res = std::make_unique<ResponseInvoke>();
 				res->deferred = r->deferred;
@@ -148,7 +149,9 @@ namespace node_ole {
 				auto resolver = Nan::New(*(r->deferred));
 				if (r->result == S_OK) {
 					// Resolve the returned object, and free the params
-					resolver->Resolve(readVariant(r->returnValue));
+					resolver->Resolve(readVariant(r->returnValue, *env));
+					freeVariant(r->returnValue);
+					freeDispParams(r->params);
 				} else {
 					// Throw an error.
 					_com_error err(r->result);

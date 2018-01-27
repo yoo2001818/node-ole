@@ -183,4 +183,17 @@ namespace node_ole {
 			return info;
 		}
 	}
+	void parseVariantTypeInfo(LPVARIANT input) {
+		DispatchInfo * info = nullptr;
+		if (input->vt == (VT_DISPATCH | VT_BYREF) || input->vt == (VT_UNKNOWN | VT_BYREF)) {
+			getObjectInfo(*(input->ppdispVal), &info);
+			input->vt = VT_DISPATCH | VT_BYREF;
+			input->pdispVal = (LPDISPATCH) info;
+		}
+		if (input->vt == VT_DISPATCH || input->vt == VT_UNKNOWN) {
+			getObjectInfo(input->pdispVal, &info);
+			input->vt = VT_DISPATCH | VT_BYREF;
+			input->pdispVal = (LPDISPATCH) info;
+		}
+	}
 }

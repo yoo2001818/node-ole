@@ -7,4 +7,5 @@ namespace node_ole {
 	HRESULT getObjectInfo(LPUNKNOWN lpunk, DispatchInfo ** output);
 	HRESULT readTypeInfo(LPTYPEINFO typeInfo, DispatchInfo * output);
 	TypeInfo readElemDesc(LPELEMDESC elemDesc);
+	void parseVariantTypeInfo(LPVARIANT input);
 }

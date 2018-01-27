@@ -41,7 +41,6 @@ namespace node_ole {
 
 			env->pushRequest(std::move(req));
 
-			printf("%S\n", (wchar_t *)iter->name.data());
 			info.GetReturnValue().Set(promise);
 			break;
 		}
