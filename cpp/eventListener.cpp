@@ -4,8 +4,11 @@
 #include "comutil.h"
 
 namespace node_ole {
-	EventListener::EventListener(Environment * env, LPTYPEINFO typeInfo, REFIID iid) {
+	EventListener::EventListener(Environment * env, DispatchInfo * info,
+		LPTYPEINFO typeInfo, REFIID iid
+	) {
 		this->env = env;
+		this->info = info;
 		this->typeInfo = typeInfo;
 		typeInfo->AddRef();
 		
@@ -101,7 +104,20 @@ namespace node_ole {
 		WORD wFlags, DISPPARAMS * pDispParams, VARIANT * pVarResult,
 		EXCEPINFO * pExcepInfo, UINT * puArgErr
 	) {
-		printf("Invoked!!!! %d\n", dispIdMember);
+		auto found = funcInfoMap->find(dispIdMember);
+		if (found == funcInfoMap->end()) return DISP_E_MEMBERNOTFOUND;
+		FuncInfo * funcInfo = &(found->second);
+		// Convert DISPPARAMS to vector, then generate event
+		if (pDispParams->cNamedArgs > 0) return DISP_E_NONAMEDARGS;
+
+		// Send the response to the node.
+		std::unique_ptr<ResponseEvent> res = std::make_unique<ResponseEvent>();
+		res->funcInfo = funcInfo;
+		res->info = info;
+		for (UINT i = 0; i < pDispParams->cArgs; ++i) {
+			res->params.push_back(pDispParams->rgvarg[i]);
+		}
+		env->pushResponse(std::move(res));
 		return S_OK;
 	}
 }

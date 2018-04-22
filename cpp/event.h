@@ -42,6 +42,7 @@ namespace node_ole {
 		virtual ResponseType getType() { return ResponseType::Event; };
 		FuncInfo * funcInfo;
 		std::vector<VARIANT> params;
+		DispatchInfo * info;
 		FunctionPersistent * eventCallback;
 	};
 

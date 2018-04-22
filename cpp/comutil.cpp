@@ -268,7 +268,7 @@ namespace node_ole {
 		result = typeInfo->GetTypeAttr(&typeAttr);
 		if FAILED(result) return result;
 
-		EventListener * listener = new EventListener(env, typeInfo, typeAttr->guid);
+		EventListener * listener = new EventListener(env, dispInfo, typeInfo, typeAttr->guid);
 		listener->AddRef();
 		*output = (LPUNKNOWN)listener;
 

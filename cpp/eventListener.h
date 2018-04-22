@@ -6,12 +6,13 @@
 namespace node_ole {
 	class EventListener : public IDispatch {
 	public:
-		EventListener(Environment * env, LPTYPEINFO typeInfo, REFIID iid);
+		EventListener(Environment * env, DispatchInfo * info, LPTYPEINFO typeInfo, REFIID iid);
 		virtual ~EventListener();
 
 		HRESULT registerTypeInfo(LPTYPEINFO typeInfo);
 
 		Environment * env;
+		DispatchInfo * info;
 		IID iid;
 		LPTYPEINFO typeInfo;
 		std::map<MEMBERID, FuncInfo> * funcInfoMap;
