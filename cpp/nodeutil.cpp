@@ -571,6 +571,7 @@ namespace node_ole {
 		}
 		case VT_BSTR: {
 			if (type & VT_BYREF) Nan::New((uint16_t *)*(input->pbstrVal)).ToLocalChecked();
+			if (input->bstrVal == NULL) return Nan::Null();
 			return Nan::New((uint16_t *)input->bstrVal).ToLocalChecked();
 		}
 		case VT_UNKNOWN:

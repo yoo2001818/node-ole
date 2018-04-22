@@ -41,9 +41,8 @@ namespace node_ole {
 		virtual ~ResponseEvent() = default;
 		virtual ResponseType getType() { return ResponseType::Event; };
 		FuncInfo * funcInfo;
-		std::vector<VARIANT> params;
+		DISPPARAMS * params;
 		DispatchInfo * info;
-		FunctionPersistent * eventCallback;
 	};
 
 	enum class RequestType {
@@ -62,7 +61,6 @@ namespace node_ole {
 		virtual RequestType getType() { return RequestType::Create; };
 		std::wstring name;
 		ResolverPersistent * deferred;
-		FunctionPersistent * eventCallback;
 	};
 
 	class RequestInvoke : public Request {

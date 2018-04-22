@@ -39,7 +39,7 @@ namespace node_ole {
 			typeInfo->ReleaseFuncDesc(funcDesc);
 			if FAILED(result) continue;
 
-			this->funcInfoMap->insert_or_assign(funcDesc->memid, funcDesc);
+			funcInfoMap.insert_or_assign(funcDesc->memid, funcInfo);
 		}
 
 		// Read implemented types.
@@ -104,8 +104,9 @@ namespace node_ole {
 		WORD wFlags, DISPPARAMS * pDispParams, VARIANT * pVarResult,
 		EXCEPINFO * pExcepInfo, UINT * puArgErr
 	) {
-		auto found = funcInfoMap->find(dispIdMember);
-		if (found == funcInfoMap->end()) return DISP_E_MEMBERNOTFOUND;
+		HRESULT result;
+		auto found = funcInfoMap.find(dispIdMember);
+		if (found == funcInfoMap.end()) return DISP_E_MEMBERNOTFOUND;
 		FuncInfo * funcInfo = &(found->second);
 		// Convert DISPPARAMS to vector, then generate event
 		if (pDispParams->cNamedArgs > 0) return DISP_E_NONAMEDARGS;
@@ -114,9 +115,15 @@ namespace node_ole {
 		std::unique_ptr<ResponseEvent> res = std::make_unique<ResponseEvent>();
 		res->funcInfo = funcInfo;
 		res->info = info;
-		for (UINT i = 0; i < pDispParams->cArgs; ++i) {
-			res->params.push_back(pDispParams->rgvarg[i]);
+		DISPPARAMS * params = new DISPPARAMS();
+		params->cArgs = pDispParams->cArgs;
+		VARIANTARG * variants = new VARIANTARG[pDispParams->cArgs];
+		for (int i = 0; i < pDispParams->cArgs; ++i) {
+			copyVariant(&(pDispParams->rgvarg[i]), &(variants[i]));
+			parseVariantTypeInfo(env, &(variants[i]));
 		}
+		params->rgvarg = variants;
+		res->params = params;
 		env->pushResponse(std::move(res));
 		return S_OK;
 	}

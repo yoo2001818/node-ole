@@ -15,7 +15,7 @@ namespace node_ole {
 		DispatchInfo * info;
 		IID iid;
 		LPTYPEINFO typeInfo;
-		std::map<MEMBERID, FuncInfo> * funcInfoMap;
+		std::map<MEMBERID, FuncInfo> funcInfoMap;
 		ULONG cRef = 0;
 
 		STDMETHOD_(ULONG, AddRef)(void);

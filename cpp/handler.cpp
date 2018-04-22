@@ -65,7 +65,7 @@ namespace node_ole {
 				result = initObject(r->name.data(), &lpunk);
 				if SUCCEEDED(result) {
 					// Retrieve type information.
-					result = getObjectInfo(env, lpunk, &dispatchInfo);
+					result = getObjectInfo(env, lpunk, &dispatchInfo, true);
 				}
 
 				// Send the response back to the node.
@@ -130,6 +130,7 @@ namespace node_ole {
 					auto tpl = Nan::New<v8::ObjectTemplate>();
 					tpl->SetInternalFieldCount(1);
 					auto object = tpl->NewInstance();
+					r->info->persistent = new Nan::Persistent<v8::Object>(object);
 					oleObj->bake(object);
 					resolver->Resolve(object);
 				} else {
@@ -162,7 +163,12 @@ namespace node_ole {
 				break;
 			}
 			case ResponseType::Event: {
+				Nan::HandleScope scope;
 				ResponseEvent * r = static_cast<ResponseEvent*>(res.get());
+				if (r->info->persistent == NULL) break;
+				auto object = Nan::New(*(r->info->persistent));
+				OLEObject * oleObj = OLEObject::Unwrap<OLEObject>(object);
+				oleObj->handleEvent(object, r->funcInfo, r->params);
 				break;
 			}
 			}

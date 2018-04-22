@@ -53,6 +53,7 @@ namespace node_ole {
 	public:
 		IUnknown * ptr;
 		IDispatch * dispPtr;
+		Nan::Persistent<v8::Object> * persistent;
 		std::list<std::wstring> typeNames;
 		std::map<std::wstring, std::vector<FuncInfo>> info;
 		std::map<std::wstring, std::vector<FuncInfo>> eventInfo;

@@ -90,4 +90,18 @@ namespace node_ole {
 		}
 		object->Set(Nan::New("eventsInfo").ToLocalChecked(), eventsInfoObj);
 	}
+	void OLEObject::handleEvent(v8::Local<v8::Object> object,
+		FuncInfo * funcInfo, DISPPARAMS * params
+	) {
+		auto handleEvent = object->Get(Nan::New("handleEvent").ToLocalChecked());
+		if (!handleEvent->IsFunction()) return;
+		auto name = Nan::New<v8::String>((uint16_t *)(funcInfo->name.data())).ToLocalChecked();
+		auto argsArray = Nan::New<v8::Array>();
+		auto handleEventFunc = v8::Handle<v8::Function>::Cast(handleEvent);
+		for (UINT i = 0; i < params->cArgs; ++i) {
+			argsArray->Set(i, readVariant(&(params->rgvarg[i]), *env));
+		}
+		v8::Local<v8::Value> args[] = { name, argsArray };
+		handleEventFunc->Call(object, 2, args);
+	}
 }

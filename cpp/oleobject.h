@@ -13,6 +13,8 @@ namespace node_ole {
 		static NAN_METHOD(Invoke);
 
 		void bake(v8::Local<v8::Object> object);
+		void handleEvent(v8::Local<v8::Object> object,
+			FuncInfo * funcInfo, DISPPARAMS * params);
 
 		Environment * env;
 		DispatchInfo * dispInfo;

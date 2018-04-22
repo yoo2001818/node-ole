@@ -24,11 +24,13 @@ namespace node_ole {
 		return S_OK;
 	}
 
-	HRESULT getObjectInfo(Environment * env, LPUNKNOWN lpunk, DispatchInfo ** output) {
+	HRESULT getObjectInfo(Environment * env, LPUNKNOWN lpunk, DispatchInfo ** output, bool registerEvents) {
 		HRESULT result;
 		LPDISPATCH disp;
+		if (lpunk == NULL) return E_FAIL;
 		result = lpunk->QueryInterface(&disp);
 		if FAILED(result) return result;
+		if (disp == NULL) return E_FAIL;
 		// Read type information and copy it into DispatchInfo.
 		DispatchInfo * info = new DispatchInfo();
 		std::vector<LPTYPELIB> typeLibs;
@@ -37,62 +39,65 @@ namespace node_ole {
 		UINT numTypes;
 		disp->GetTypeInfoCount(&numTypes);
 		for (UINT i = 0; i < numTypes; ++i) {
-			LPTYPEINFO typeInfo;
+			LPTYPEINFO typeInfo = NULL;
 			disp->GetTypeInfo(i, NULL, &typeInfo);
+			if (typeInfo == NULL) continue;
 			LPTYPELIB typeLib;
 			UINT typePos;
 			typeInfo->GetContainingTypeLib(&typeLib, &typePos);
+			if (typeLib == NULL) continue;
 			typeLibs.push_back(typeLib);
 			readTypeInfo(typeInfo, info, false);
 			typeInfo->Release();
 		}
 		// Read event listener type info.
 		LPCONNECTIONPOINTCONTAINER connPointContainer;
-		result = lpunk->QueryInterface(&connPointContainer);
-		if SUCCEEDED(result) {
-			LPENUMCONNECTIONPOINTS connPoints;
-			connPointContainer->EnumConnectionPoints(&connPoints);
-			LPCONNECTIONPOINT connPoint;
-			ULONG connFetched = 0;
-			connPoints->Next(1, &connPoint, &connFetched);
-			while (connFetched > 0) {
-				IID connIID;
-				connPoint->GetConnectionInterface(&connIID);
-				// Fetch ITypeInfo fromTypeInfo above.
-				LPTYPEINFO typeInfo = NULL;
-				for (auto iter = typeLibs.begin(); iter != typeLibs.end(); iter++) {
-					LPTYPELIB typeLib = *iter;
-					typeLib->GetTypeInfoOfGuid(connIID, &typeInfo);
-					if (typeInfo != NULL) break;
-				}
-				if (typeInfo != NULL) {
-					printf("Found a type info\n");
-					// Read typeInfo to an object.
-					readTypeInfo(typeInfo, info, true);
-					LPUNKNOWN eventObj;
-					result = createEventObject(env, typeInfo, info, &eventObj);
-					if SUCCEEDED(result) {
-						DWORD cookie;
-						connPoint->Advise(eventObj, &cookie);
-						// All good! Create connection point object for removing it later.
-						ConnectionPointConnection connection;
-						connection.cookie = cookie;
-						connection.listener = (EventListener *)eventObj;
-						eventObj->AddRef();
-						connection.point = connPoint;
-						connection.point->AddRef();
-						info->connections.push_back(connection);
-					}
-					typeInfo->Release();
-				}
-				connPoint->Release();
+		if (registerEvents) {
+			result = lpunk->QueryInterface(&connPointContainer);
+			if SUCCEEDED(result) {
+				LPENUMCONNECTIONPOINTS connPoints;
+				connPointContainer->EnumConnectionPoints(&connPoints);
+				LPCONNECTIONPOINT connPoint;
+				ULONG connFetched = 0;
 				connPoints->Next(1, &connPoint, &connFetched);
+				while (connFetched > 0) {
+					IID connIID;
+					connPoint->GetConnectionInterface(&connIID);
+					// Fetch ITypeInfo fromTypeInfo above.
+					LPTYPEINFO typeInfo = NULL;
+					for (auto iter = typeLibs.begin(); iter != typeLibs.end(); iter++) {
+						LPTYPELIB typeLib = *iter;
+						typeLib->GetTypeInfoOfGuid(connIID, &typeInfo);
+						if (typeInfo != NULL) break;
+					}
+					if (typeInfo != NULL) {
+						// Read typeInfo to an object.
+						readTypeInfo(typeInfo, info, true);
+						LPUNKNOWN eventObj;
+						result = createEventObject(env, typeInfo, info, &eventObj);
+						if SUCCEEDED(result) {
+							DWORD cookie;
+							connPoint->Advise(eventObj, &cookie);
+							// All good! Create connection point object for removing it later.
+							ConnectionPointConnection connection;
+							connection.cookie = cookie;
+							connection.listener = (EventListener *)eventObj;
+							eventObj->AddRef();
+							connection.point = connPoint;
+							connection.point->AddRef();
+							info->connections.push_back(connection);
+						}
+						typeInfo->Release();
+					}
+					connPoint->Release();
+					connPoints->Next(1, &connPoint, &connFetched);
+				}
+				connPoints->Release();
+				connPointContainer->Release();
 			}
-			connPoints->Release();
-			connPointContainer->Release();
 		}
-		for (auto iter = typeLibs.front(); iter != typeLibs.back(); iter++) {
-			iter->Release();
+		for (auto iter = typeLibs.begin(); iter != typeLibs.end(); iter++) {
+			(*iter)->Release();
 		}
 		*output = info;
 		return S_OK;
@@ -250,14 +255,116 @@ namespace node_ole {
 	void parseVariantTypeInfo(Environment * env, LPVARIANT input) {
 		DispatchInfo * info = nullptr;
 		if (input->vt == (VT_DISPATCH | VT_BYREF) || input->vt == (VT_UNKNOWN | VT_BYREF)) {
-			getObjectInfo(env, *(input->ppdispVal), &info);
+			getObjectInfo(env, *(input->ppdispVal), &info, false);
 			input->vt = VT_DISPATCH | VT_BYREF;
 			input->pdispVal = (LPDISPATCH) info;
 		}
 		if (input->vt == VT_DISPATCH || input->vt == VT_UNKNOWN) {
-			getObjectInfo(env, input->pdispVal, &info);
+			getObjectInfo(env, input->pdispVal, &info, false);
 			input->vt = VT_DISPATCH | VT_BYREF;
 			input->pdispVal = (LPDISPATCH) info;
+		}
+	}
+	void copyVariant(LPVARIANT input, LPVARIANT output) {
+		VARTYPE type = input->vt;
+		output->vt = type & (~VT_BYREF);
+		switch (type & (~VT_BYREF)) {
+		case VT_NULL:
+			return;
+		case VT_CY: {
+			if (type & VT_BYREF) output->cyVal = *(input->pcyVal);
+			else output->cyVal = input->cyVal;
+			return;
+		}
+		case VT_DATE: {
+			if (type & VT_BYREF) output->date = *(input->pdate);
+			else output->date = input->date;
+			return;
+		}
+		case VT_BSTR: {
+			BSTR str;
+			if (type & VT_BYREF) {
+				str = SysAllocString(*(input->pbstrVal));
+			} else {
+				str = SysAllocString(input->bstrVal);
+			}
+			output->bstrVal = str;
+			return;
+		}
+		case VT_UNKNOWN:
+		case VT_DISPATCH: {
+			output->vt = input->vt;
+			output->punkVal = input->punkVal;
+			// output->punkVal = NULL;
+			return;
+		}
+		case VT_BOOL: {
+			if (type & VT_BYREF) output->boolVal = *(input->pboolVal);
+			else output->boolVal = input->boolVal;
+			return;
+		}
+		case VT_VARIANT: {
+			if (type & VT_BYREF) {
+				copyVariant(input->pvarVal, output);
+			}
+			return;
+		}
+		case VT_DECIMAL: {
+			if (type & VT_BYREF) output->decVal = *(input->pdecVal);
+			else output->decVal = input->decVal;
+			return;
+		}
+		case VT_R4: {
+			if (type & VT_BYREF) output->fltVal = *(input->pfltVal);
+			else output->fltVal = input->fltVal;
+			return;
+		}
+		case VT_R8: {
+			if (type & VT_BYREF) output->dblVal = *(input->pdblVal);
+			else output->dblVal = input->dblVal;
+			return;
+		}
+		case VT_UI1:
+		case VT_I1: {
+			if (type & VT_BYREF) output->cVal = *(input->pcVal);
+			else output->cVal = input->cVal;
+			return;
+		}
+		case VT_UI2:
+		case VT_I2: {
+			if (type & VT_BYREF) output->iVal = *(input->piVal);
+			else output->iVal = input->iVal;
+			return;
+		}
+		case VT_UI4:
+		case VT_I4: {
+			if (type & VT_BYREF) output->lVal = *(input->plVal);
+			else output->lVal = input->lVal;
+			return;
+		}
+		case VT_UI8:
+		case VT_I8: {
+			if (type & VT_BYREF) output->llVal = *(input->pllVal);
+			else output->llVal = input->llVal;
+			return;
+		}
+		case VT_INT: {
+			if (type & VT_BYREF) output->intVal = *(input->pintVal);
+			else output->intVal = input->intVal;
+			return;
+		}
+		case VT_UINT: {
+			if (type & VT_BYREF) output->uintVal = *(input->puintVal);
+			else output->uintVal = input->uintVal;
+			return;
+		}
+		case VT_SAFEARRAY: {
+			// TODO
+		}
+		case VT_ERROR:
+		case VT_HRESULT: {
+
+		}
 		}
 	}
 	HRESULT createEventObject(Environment * env, LPTYPEINFO typeInfo, DispatchInfo * dispInfo,

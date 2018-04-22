@@ -1,12 +1,16 @@
 const environment = require('../src');
 (async function() {
   let ie = await environment.create('InternetExplorer.Application');
+  ie.handleEvent = (name, args) => {
+    console.log(name, args);
+  };
   console.log(ie.eventsInfo);
   console.log(ie.typeNames);
   // ole.create('{8DEC7B3B-3332-4B59-AF2B-DDEBF6419DD7}')
   for (let key in ie) {
     if (key === 'eventsInfo') continue;
     if (key === 'typeNames') continue;
+    if (key === 'handleEvent') continue;
     ie[key].types.forEach(type => {
       // Format the type information.
       let result = `[${type.type}] ${type.name}`;
