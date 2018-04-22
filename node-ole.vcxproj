@@ -98,8 +98,8 @@
     <ExcludePath>C:\Users\yoo2001818\.node-gyp\8.9.1\include\node;$(ExcludePath)</ExcludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\yoo2001818\.node-gyp\8.9.1\include\node;C:\Users\yoo2001818\git\node-ole\node_modules\nan;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\yoo2001818\.node-gyp\8.9.1\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\yoo2001818\.node-gyp\8.10.0\include\node;C:\Users\yoo2001818\git\node-ole\node_modules\nan;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\yoo2001818\.node-gyp\8.10.0\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

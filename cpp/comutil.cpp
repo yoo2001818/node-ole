@@ -30,6 +30,7 @@ namespace node_ole {
 		if FAILED(result) return result;
 		// Read type information and copy it into DispatchInfo.
 		DispatchInfo * info = new DispatchInfo();
+		std::vector<LPTYPELIB> typeLibs;
 		info->ptr = lpunk;
 		info->dispPtr = disp;
 		UINT numTypes;
@@ -37,14 +38,52 @@ namespace node_ole {
 		for (UINT i = 0; i < numTypes; ++i) {
 			LPTYPEINFO typeInfo;
 			disp->GetTypeInfo(i, NULL, &typeInfo);
-			readTypeInfo(typeInfo, info);
+			LPTYPELIB typeLib;
+			UINT typePos;
+			typeInfo->GetContainingTypeLib(&typeLib, &typePos);
+			typeLibs.push_back(typeLib);
+			readTypeInfo(typeInfo, info, false);
 			typeInfo->Release();
+		}
+		// Read event listener type info.
+		LPCONNECTIONPOINTCONTAINER connPointContainer;
+		result = lpunk->QueryInterface(&connPointContainer);
+		if SUCCEEDED(result) {
+			LPENUMCONNECTIONPOINTS connPoints;
+			connPointContainer->EnumConnectionPoints(&connPoints);
+			LPCONNECTIONPOINT connPoint;
+			ULONG connFetched = 0;
+			connPoints->Next(1, &connPoint, &connFetched);
+			while (connFetched > 0) {
+				IID connIID;
+				connPoint->GetConnectionInterface(&connIID);
+				// Fetch ITypeInfo fromTypeInfo above.
+				LPTYPEINFO typeInfo = NULL;
+				for (auto iter = typeLibs.begin(); iter != typeLibs.end(); iter++) {
+					LPTYPELIB typeLib = *iter;
+					typeLib->GetTypeInfoOfGuid(connIID, &typeInfo);
+					if (typeInfo != NULL) break;
+				}
+				if (typeInfo != NULL) {
+					printf("Found a type info\n");
+					// Read typeInfo to an object.
+					readTypeInfo(typeInfo, info, true);
+					typeInfo->Release();
+				}
+				connPoint->Release();
+				connPoints->Next(1, &connPoint, &connFetched);
+			}
+			connPoints->Release();
+			connPointContainer->Release();
+		}
+		for (auto iter = typeLibs.front(); iter != typeLibs.back(); iter++) {
+			iter->Release();
 		}
 		*output = info;
 		return S_OK;
 	}
 
-	HRESULT readTypeInfo(LPTYPEINFO typeInfo, DispatchInfo * output) {
+	HRESULT readTypeInfo(LPTYPEINFO typeInfo, DispatchInfo * output, bool isEvent) {
 		HRESULT result;
 		LPTYPEATTR typeAttr;
 		result = typeInfo->GetTypeAttr(&typeAttr);
@@ -107,12 +146,14 @@ namespace node_ole {
 			free(namesArr);
 			typeInfo->ReleaseFuncDesc(funcDesc);
 
+			auto infoMap = &(output->info);
+			if (isEvent) infoMap = &(output->eventInfo);
 			// Put the info into the map.
-			auto found = output->info.find(funcInfo.name);
-			if (found != output->info.end()) {
+			auto found = infoMap->find(funcInfo.name);
+			if (found != infoMap->end()) {
 				found->second.push_back(std::move(funcInfo));
 			} else {
-				output->info[funcInfo.name] = { funcInfo };
+				(*infoMap)[funcInfo.name] = { funcInfo };
 			}
 		}
 
@@ -124,7 +165,7 @@ namespace node_ole {
 			if FAILED(result) return result;
 			result = typeInfo->GetRefTypeInfo(handle, &implTypeInfo);
 			if FAILED(result) return result;
-			readTypeInfo(implTypeInfo, output);
+			readTypeInfo(implTypeInfo, output, isEvent);
 			implTypeInfo->Release();
 		}
 

@@ -1,8 +1,12 @@
 const environment = require('../src');
 (async function() {
   let ie = await environment.create('InternetExplorer.Application');
+  console.log(ie.eventsInfo);
+  console.log(ie.typeNames);
   // ole.create('{8DEC7B3B-3332-4B59-AF2B-DDEBF6419DD7}')
   for (let key in ie) {
+    if (key === 'eventsInfo') continue;
+    if (key === 'typeNames') continue;
     ie[key].types.forEach(type => {
       // Format the type information.
       let result = `[${type.type}] ${type.name}`;
@@ -20,7 +24,6 @@ const environment = require('../src');
   setTimeout(() => ie.StatusText('Go to sleep'), 1000);
   console.log(await ie.Path());
   console.log(await ie.ReadyState());
-  console.log(await ie.Application());
   setTimeout(() => ie.Quit(), 10000);
 })()
   .catch(v => console.error(v));

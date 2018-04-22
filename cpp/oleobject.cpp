@@ -50,6 +50,12 @@ namespace node_ole {
 	}
 	void OLEObject::bake(v8::Local<v8::Object> object) {
 		Wrap(object);
+		auto typeNames = Nan::New<v8::Array>();
+		int typeNameCount = 0;
+		for (auto iter = dispInfo->typeNames.begin(); iter != dispInfo->typeNames.end(); iter++) {
+			typeNames->Set(typeNameCount++, Nan::New((uint16_t *)iter->data()).ToLocalChecked());
+		}
+		object->Set(Nan::New("typeNames").ToLocalChecked(), typeNames);
 		// Read out dispatch info, and put it to the object
 		for (auto iter = dispInfo->info.begin(); iter != dispInfo->info.end(); iter++) {
 			auto tpl = Nan::New<v8::FunctionTemplate>(Invoke, Nan::New<v8::External>(&(iter->second)));
@@ -67,5 +73,21 @@ namespace node_ole {
 			func->Set(Nan::New("types").ToLocalChecked(), typeArr);
 			object->Set(Nan::New((uint16_t *)iter->first.data()).ToLocalChecked(), func);
 		}
+		// Read event info too
+		auto eventsInfoObj = Nan::New<v8::Object>();
+		for (auto iter = dispInfo->eventInfo.begin(); iter != dispInfo->eventInfo.end(); iter++) {
+			// Set the data of func
+			auto typeArr = Nan::New<v8::Array>();
+			auto& list = iter->second;
+			int count = 0;
+			for (auto iter = list.begin(); iter != list.end(); iter++) {
+				// Set type information
+				auto obj = Nan::New<v8::Object>();
+				constructFuncInfo(*iter, obj);
+				typeArr->Set(count++, obj);
+			}
+			eventsInfoObj->Set(Nan::New((uint16_t *)iter->first.data()).ToLocalChecked(), typeArr);
+		}
+		object->Set(Nan::New("eventsInfo").ToLocalChecked(), eventsInfoObj);
 	}
 }
