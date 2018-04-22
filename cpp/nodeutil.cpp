@@ -163,6 +163,7 @@ namespace node_ole {
 	}
 	void constructFuncInfo(FuncInfo& funcInfo, v8::Local<v8::Object>& output) {
 		output->Set(Nan::New("dispId").ToLocalChecked(), Nan::New(funcInfo.dispId));
+		output->Set(Nan::New("vftId").ToLocalChecked(), Nan::New(funcInfo.vftId));
 		output->Set(Nan::New("name").ToLocalChecked(),
 			Nan::New((uint16_t *) funcInfo.name.data()).ToLocalChecked());
 		output->Set(Nan::New("description").ToLocalChecked(),

@@ -65,8 +65,7 @@ namespace node_ole {
 				result = initObject(r->name.data(), &lpunk);
 				if SUCCEEDED(result) {
 					// Retrieve type information.
-					result = getObjectInfo(lpunk, &dispatchInfo);
-					// Initialize event listeners. TODO
+					result = getObjectInfo(env, lpunk, &dispatchInfo);
 				}
 
 				// Send the response back to the node.
@@ -89,7 +88,7 @@ namespace node_ole {
 				result = r->dispatch->Invoke(r->funcInfo->dispId, IID_NULL, NULL,
 					r->funcInfo->invokeKind, r->params, output, &excepInfo, &argErr);
 				// Parse variant information.
-				parseVariantTypeInfo(output);
+				parseVariantTypeInfo(env, output);
 				// Send the response back to the node.
 				std::unique_ptr<ResponseInvoke> res = std::make_unique<ResponseInvoke>();
 				res->deferred = r->deferred;

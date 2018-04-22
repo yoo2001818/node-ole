@@ -1,4 +1,5 @@
 #include "comutil.h"
+#include "eventListener.h"
 
 namespace node_ole {
 	HRESULT initObject(const wchar_t * name, LPUNKNOWN * output) {
@@ -23,7 +24,7 @@ namespace node_ole {
 		return S_OK;
 	}
 
-	HRESULT getObjectInfo(LPUNKNOWN lpunk, DispatchInfo ** output) {
+	HRESULT getObjectInfo(Environment * env, LPUNKNOWN lpunk, DispatchInfo ** output) {
 		HRESULT result;
 		LPDISPATCH disp;
 		result = lpunk->QueryInterface(&disp);
@@ -68,6 +69,20 @@ namespace node_ole {
 					printf("Found a type info\n");
 					// Read typeInfo to an object.
 					readTypeInfo(typeInfo, info, true);
+					LPUNKNOWN eventObj;
+					result = createEventObject(env, typeInfo, info, &eventObj);
+					if SUCCEEDED(result) {
+						DWORD cookie;
+						connPoint->Advise(eventObj, &cookie);
+						// All good! Create connection point object for removing it later.
+						ConnectionPointConnection connection;
+						connection.cookie = cookie;
+						connection.listener = (EventListener *)eventObj;
+						eventObj->AddRef();
+						connection.point = connPoint;
+						connection.point->AddRef();
+						info->connections.push_back(connection);
+					}
 					typeInfo->Release();
 				}
 				connPoint->Release();
@@ -107,44 +122,10 @@ namespace node_ole {
 			result = typeInfo->GetFuncDesc(funcId, &funcDesc);
 			if FAILED(result) continue;
 
-			// Stop if the function is hidden or restricted.
-			WORD funcFlags = funcDesc->wFuncFlags;
-			if (funcFlags & FUNCFLAG_FHIDDEN) continue;
-			if (funcFlags & FUNCFLAG_FRESTRICTED) continue;
-
 			FuncInfo funcInfo;
-			// Read documentation.
-			BSTR funcName;
-			BSTR funcDoc;
-			typeInfo->GetDocumentation(funcDesc->memid, &funcName, &funcDoc, NULL, NULL);
-			if (funcName != NULL) funcInfo.name = (std::wstring) _bstr_t(funcName, false);
-			if (funcDoc != NULL) funcInfo.description = (std::wstring) _bstr_t(funcDoc, false);
-			funcInfo.invokeKind = funcDesc->invkind;
-
-			funcInfo.dispId = funcDesc->memid;
-
-			// Read return type.
-			funcInfo.returnType = readElemDesc(&(funcDesc->elemdescFunc));
-
-			// Get names.
-			// Before calling GetNames, allocate BSTR array first.
-			UINT paramSize = funcDesc->cParams + 1;
-			BSTR * namesArr = (BSTR *)malloc(sizeof(BSTR) * paramSize);
-			typeInfo->GetNames(funcDesc->memid, namesArr, paramSize, &paramSize);
-
-			// Process each arguments.
-			for (UINT k = 1; k < paramSize; ++k) {
-				ArgInfo argInfo;
-				LPELEMDESC elemDesc = &(funcDesc->lprgelemdescParam[k - 1]);
-				argInfo.flags = elemDesc->paramdesc.wParamFlags;
-				argInfo.name = (std::wstring) _bstr_t(namesArr[k], false);
-				argInfo.type = readElemDesc(elemDesc);
-				funcInfo.args.push_back(argInfo);
-			}
-
-			// Free names
-			free(namesArr);
+			result = readFuncInfo(typeInfo, funcDesc, &funcInfo, isEvent);
 			typeInfo->ReleaseFuncDesc(funcDesc);
+			if FAILED(result) continue;
 
 			auto infoMap = &(output->info);
 			if (isEvent) infoMap = &(output->eventInfo);
@@ -171,6 +152,48 @@ namespace node_ole {
 
 		typeInfo->ReleaseTypeAttr(typeAttr);
 
+		return S_OK;
+	}
+
+	HRESULT readFuncInfo(LPTYPEINFO typeInfo, LPFUNCDESC funcDesc, FuncInfo * output, bool isEvent) {
+		// Stop if the function is hidden or restricted.
+		WORD funcFlags = funcDesc->wFuncFlags;
+		if (funcFlags & FUNCFLAG_FHIDDEN) return E_FAIL;
+		if (funcFlags & FUNCFLAG_FRESTRICTED) return E_FAIL;
+
+		FuncInfo * funcInfo = output;
+		// Read documentation.
+		BSTR funcName;
+		BSTR funcDoc;
+		typeInfo->GetDocumentation(funcDesc->memid, &funcName, &funcDoc, NULL, NULL);
+		if (funcName != NULL) funcInfo->name = (std::wstring) _bstr_t(funcName, false);
+		if (funcDoc != NULL) funcInfo->description = (std::wstring) _bstr_t(funcDoc, false);
+		funcInfo->invokeKind = funcDesc->invkind;
+
+		funcInfo->dispId = funcDesc->memid;
+		funcInfo->vftId = funcDesc->oVft;
+
+		// Read return type.
+		funcInfo->returnType = readElemDesc(&(funcDesc->elemdescFunc));
+
+		// Get names.
+		// Before calling GetNames, allocate BSTR array first.
+		UINT paramSize = funcDesc->cParams + 1;
+		BSTR * namesArr = (BSTR *)malloc(sizeof(BSTR) * paramSize);
+		typeInfo->GetNames(funcDesc->memid, namesArr, paramSize, &paramSize);
+
+		// Process each arguments.
+		for (UINT k = 1; k < paramSize; ++k) {
+			ArgInfo argInfo;
+			LPELEMDESC elemDesc = &(funcDesc->lprgelemdescParam[k - 1]);
+			argInfo.flags = elemDesc->paramdesc.wParamFlags;
+			argInfo.name = (std::wstring) _bstr_t(namesArr[k], false);
+			argInfo.type = readElemDesc(elemDesc);
+			funcInfo->args.push_back(argInfo);
+		}
+
+		// Free names
+		free(namesArr);
 		return S_OK;
 	}
 
@@ -224,17 +247,33 @@ namespace node_ole {
 			return info;
 		}
 	}
-	void parseVariantTypeInfo(LPVARIANT input) {
+	void parseVariantTypeInfo(Environment * env, LPVARIANT input) {
 		DispatchInfo * info = nullptr;
 		if (input->vt == (VT_DISPATCH | VT_BYREF) || input->vt == (VT_UNKNOWN | VT_BYREF)) {
-			getObjectInfo(*(input->ppdispVal), &info);
+			getObjectInfo(env, *(input->ppdispVal), &info);
 			input->vt = VT_DISPATCH | VT_BYREF;
 			input->pdispVal = (LPDISPATCH) info;
 		}
 		if (input->vt == VT_DISPATCH || input->vt == VT_UNKNOWN) {
-			getObjectInfo(input->pdispVal, &info);
+			getObjectInfo(env, input->pdispVal, &info);
 			input->vt = VT_DISPATCH | VT_BYREF;
 			input->pdispVal = (LPDISPATCH) info;
 		}
+	}
+	HRESULT createEventObject(Environment * env, LPTYPEINFO typeInfo, DispatchInfo * dispInfo,
+		LPUNKNOWN * output
+	) {
+		HRESULT result;
+		LPTYPEATTR typeAttr;
+		result = typeInfo->GetTypeAttr(&typeAttr);
+		if FAILED(result) return result;
+
+		EventListener * listener = new EventListener(env, typeInfo, typeAttr->guid);
+		listener->AddRef();
+		*output = (LPUNKNOWN)listener;
+
+		typeInfo->ReleaseTypeAttr(typeAttr);
+
+		return S_OK;
 	}
 }

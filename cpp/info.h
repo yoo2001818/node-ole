@@ -33,12 +33,20 @@ namespace node_ole {
 	class FuncInfo {
 	public:
 		DISPID dispId;
+		SHORT vftId;
 		INVOKEKIND invokeKind;
 		std::wstring name;
 		std::wstring description;
 		TypeInfo returnType;
 		std::vector<ArgInfo> args;
 		std::vector<ArgInfo> outs;
+	};
+
+	class ConnectionPointConnection {
+	public:
+		LPCONNECTIONPOINT point;
+		DWORD cookie;
+		void * listener;
 	};
 
 	class DispatchInfo {
@@ -48,5 +56,6 @@ namespace node_ole {
 		std::list<std::wstring> typeNames;
 		std::map<std::wstring, std::vector<FuncInfo>> info;
 		std::map<std::wstring, std::vector<FuncInfo>> eventInfo;
+		std::list<ConnectionPointConnection> connections;
 	};
 }

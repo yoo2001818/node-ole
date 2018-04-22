@@ -8,7 +8,8 @@
         'cpp/environment.cpp',
 		'cpp/comutil.cpp',
 		'cpp/nodeutil.cpp',
-		'cpp/oleobject.cpp'
+		'cpp/oleobject.cpp',
+        'cpp/eventListener.cpp'
       ],
       'dependencies': [
       ],
