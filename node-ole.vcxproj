@@ -22,6 +22,7 @@
     <ClInclude Include="cpp\comutil.h" />
     <ClInclude Include="cpp\environment.h" />
     <ClInclude Include="cpp\event.h" />
+    <ClInclude Include="cpp\eventListener.h" />
     <ClInclude Include="cpp\handler.h" />
     <ClInclude Include="cpp\info.h" />
     <ClInclude Include="cpp\nodeutil.h" />
@@ -31,6 +32,7 @@
   <ItemGroup>
     <ClCompile Include="cpp\comutil.cpp" />
     <ClCompile Include="cpp\environment.cpp" />
+    <ClCompile Include="cpp\eventListener.cpp" />
     <ClCompile Include="cpp\handler.cpp" />
     <ClCompile Include="cpp\main.cpp" />
     <ClCompile Include="cpp\nodeutil.cpp" />

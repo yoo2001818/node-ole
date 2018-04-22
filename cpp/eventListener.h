@@ -9,10 +9,12 @@ namespace node_ole {
 		EventListener(Environment * env, LPTYPEINFO typeInfo, REFIID iid);
 		virtual ~EventListener();
 
+		HRESULT registerTypeInfo(LPTYPEINFO typeInfo);
+
 		Environment * env;
 		IID iid;
 		LPTYPEINFO typeInfo;
-		std::map<SHORT, FuncInfo> * funcInfoMap;
+		std::map<MEMBERID, FuncInfo> * funcInfoMap;
 		ULONG cRef = 0;
 
 		STDMETHOD_(ULONG, AddRef)(void);
