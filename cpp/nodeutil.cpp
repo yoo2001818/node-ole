@@ -186,7 +186,7 @@ namespace node_ole {
 				}
 				arrC->Set(indexC, obj);
 				indexC++;
-				if (flags & PARAMFLAG_FIN) {
+				if (flags & PARAMFLAG_FIN || flags == 0) {
 					arr->Set(index, obj);
 					index++;
 				}
@@ -290,7 +290,7 @@ namespace node_ole {
 		for (auto j = funcInfo.args.begin(); j != funcInfo.args.end(); j++) {
 			// Skip if current flag is not 'in'
 			auto flags = j->flags;
-			if (!(flags & PARAMFLAG_FIN)) continue;
+			if (!(flags & PARAMFLAG_FIN || flags == 0)) continue;
 			// Handle if args has ended
 			if (i == args.end()) {
 				if (flags & PARAMFLAG_FOPT) continue;

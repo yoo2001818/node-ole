@@ -121,6 +121,31 @@ namespace node_ole {
 		if FAILED(result) return result;
 		output->typeNames.push_back(std::move((std::wstring) _bstr_t(typeName, false)));
 
+		// Read each defined variables.
+		LPVARDESC varDesc;
+		for (UINT varId = 0; varId < typeAttr->cVars; ++varId) {
+			result = typeInfo->GetVarDesc(varId, &varDesc);
+			if FAILED(result) continue;
+
+			FuncInfo funcInfo[2];
+			result = readVarInfo(typeInfo, varDesc, funcInfo + 0, false);
+			result = readVarInfo(typeInfo, varDesc, funcInfo + 1, true);
+			typeInfo->ReleaseVarDesc(varDesc);
+			if FAILED(result) continue;
+
+			auto infoMap = &(output->info);
+			if (isEvent) infoMap = &(output->eventInfo);
+			// Put the info into the map.
+			auto found = infoMap->find(funcInfo[0].name);
+			if (found != infoMap->end()) {
+				found->second.push_back(std::move(funcInfo[0]));
+				found->second.push_back(std::move(funcInfo[1]));
+			}
+			else {
+				(*infoMap)[funcInfo[0].name] = { funcInfo[0], funcInfo[1] };
+			}
+		}
+
 		// Read each defined functions.
 		LPFUNCDESC funcDesc;
 		for (UINT funcId = 0; funcId < typeAttr->cFuncs; ++funcId) {
@@ -128,7 +153,7 @@ namespace node_ole {
 			if FAILED(result) continue;
 
 			FuncInfo funcInfo;
-			result = readFuncInfo(typeInfo, funcDesc, &funcInfo, isEvent);
+			result = readFuncInfo(typeInfo, funcDesc, &funcInfo);
 			typeInfo->ReleaseFuncDesc(funcDesc);
 			if FAILED(result) continue;
 
@@ -160,7 +185,7 @@ namespace node_ole {
 		return S_OK;
 	}
 
-	HRESULT readFuncInfo(LPTYPEINFO typeInfo, LPFUNCDESC funcDesc, FuncInfo * output, bool isEvent) {
+	HRESULT readFuncInfo(LPTYPEINFO typeInfo, LPFUNCDESC funcDesc, FuncInfo * output) {
 		// Stop if the function is hidden or restricted.
 		WORD funcFlags = funcDesc->wFuncFlags;
 		if (funcFlags & FUNCFLAG_FHIDDEN) return E_FAIL;
@@ -199,6 +224,38 @@ namespace node_ole {
 
 		// Free names
 		free(namesArr);
+		return S_OK;
+	}
+
+	HRESULT readVarInfo(LPTYPEINFO typeInfo, LPVARDESC varDesc, FuncInfo * output, bool isWrite) {
+		// Stop if the variable is hidden or restricted.
+		WORD varFlags = varDesc->wVarFlags;
+		if (varFlags & VARFLAG_FHIDDEN) return E_FAIL;
+		if (varFlags & VARFLAG_FRESTRICTED) return E_FAIL;
+
+		FuncInfo * funcInfo = output;
+		// Read documentation.
+		BSTR funcName;
+		BSTR funcDoc;
+		typeInfo->GetDocumentation(varDesc->memid, &funcName, &funcDoc, NULL, NULL);
+		if (funcName != NULL) funcInfo->name = (std::wstring) _bstr_t(funcName, false);
+		if (funcDoc != NULL) funcInfo->description = (std::wstring) _bstr_t(funcDoc, false);
+		funcInfo->invokeKind = isWrite ? INVOKE_PROPERTYPUT : INVOKE_PROPERTYGET;
+
+		funcInfo->dispId = varDesc->memid;
+		funcInfo->vftId = 0;
+
+		// Read return type.
+		funcInfo->returnType = readElemDesc(&(varDesc->elemdescVar));
+
+		if (isWrite) {
+			ArgInfo argInfo;
+			argInfo.flags = PARAMFLAG_FIN;
+			argInfo.name = L"value";
+			argInfo.type = funcInfo->returnType;
+			funcInfo->args.push_back(argInfo);
+		}
+
 		return S_OK;
 	}
 
