@@ -35,7 +35,7 @@ namespace node_ole {
 			if FAILED(result) continue;
 
 			FuncInfo funcInfo;
-			result = readFuncInfo(typeInfo, funcDesc, &funcInfo, true);
+			result = readFuncInfo(typeInfo, funcDesc, &funcInfo);
 			typeInfo->ReleaseFuncDesc(funcDesc);
 			if FAILED(result) continue;
 

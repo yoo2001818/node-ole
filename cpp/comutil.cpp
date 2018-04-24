@@ -1,5 +1,6 @@
 #include "comutil.h"
 #include "eventListener.h"
+#include "dummyClientSite.h"
 
 namespace node_ole {
 	HRESULT initObject(const wchar_t * name, LPUNKNOWN * output) {
@@ -94,6 +95,27 @@ namespace node_ole {
 				}
 				connPoints->Release();
 				connPointContainer->Release();
+			}
+		}
+		// Initialize OLE Object, if it's necessary.
+		if (registerEvents) {
+			LPOLEINPLACEOBJECT lpOleInPlace;
+			result = lpunk->QueryInterface(&lpOleInPlace);
+			if SUCCEEDED(result) {
+				HWND hwnd;
+				lpOleInPlace->GetWindow(&hwnd);
+
+				LPOLEOBJECT lpOle;
+				if SUCCEEDED(lpunk->QueryInterface(&lpOle)) {
+					LPOLECLIENTSITE lpOleClientSite = new DummyClientSite();
+					result = lpOle->SetClientSite(lpOleClientSite);
+					result = lpOle->DoVerb(OLEIVERB_INPLACEACTIVATE,
+						NULL,
+						lpOleClientSite,
+						0,
+						NULL,
+						NULL);
+				}
 			}
 		}
 		for (auto iter = typeLibs.begin(); iter != typeLibs.end(); iter++) {

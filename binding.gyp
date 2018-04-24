@@ -9,7 +9,8 @@
 		'cpp/comutil.cpp',
 		'cpp/nodeutil.cpp',
 		'cpp/oleobject.cpp',
-        'cpp/eventListener.cpp'
+        'cpp/eventListener.cpp',
+		'cpp/dummyClientSite.cpp'
       ],
       'dependencies': [
       ],

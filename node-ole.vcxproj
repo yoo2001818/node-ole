@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpp\comutil.h" />
+    <ClInclude Include="cpp\dummyClientSite.h" />
     <ClInclude Include="cpp\environment.h" />
     <ClInclude Include="cpp\event.h" />
     <ClInclude Include="cpp\eventListener.h" />
@@ -31,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cpp\comutil.cpp" />
+    <ClCompile Include="cpp\dummyClientSite.cpp" />
     <ClCompile Include="cpp\environment.cpp" />
     <ClCompile Include="cpp\eventListener.cpp" />
     <ClCompile Include="cpp\handler.cpp" />
