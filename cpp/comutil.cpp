@@ -1,6 +1,7 @@
 #include "comutil.h"
 #include "eventListener.h"
 #include "dummyClientSite.h"
+#include "olewindow.h"
 
 namespace node_ole {
 	HRESULT initObject(const wchar_t * name, LPUNKNOWN * output) {
@@ -102,19 +103,31 @@ namespace node_ole {
 			LPOLEINPLACEOBJECT lpOleInPlace;
 			result = lpunk->QueryInterface(&lpOleInPlace);
 			if SUCCEEDED(result) {
-				HWND hwnd;
-				lpOleInPlace->GetWindow(&hwnd);
+				printf("OLE in place\n");
+				HWND handle;
+				createOleWindow(&handle);
+				RECT rect = { 0, 0, 640, 480 };
+				// lpOleInPlace->SetObjectRects(&rect, &rect);
 
 				LPOLEOBJECT lpOle;
 				if SUCCEEDED(lpunk->QueryInterface(&lpOle)) {
-					LPOLECLIENTSITE lpOleClientSite = new DummyClientSite();
+					printf("OLE init\n");
+					LPOLECLIENTSITE lpOleClientSite = new DummyClientSite(handle, rect);
+					lpOleClientSite->AddRef();
 					result = lpOle->SetClientSite(lpOleClientSite);
+					setOleWindowIUnknown(lpunk);
 					result = lpOle->DoVerb(OLEIVERB_INPLACEACTIVATE,
 						NULL,
 						lpOleClientSite,
 						0,
-						NULL,
-						NULL);
+						handle,
+						&rect);
+					UpdateWindow(handle);
+					if FAILED(result) {
+						printf("%X\n", result);
+						_com_error err(result);
+						std::wcout << err.ErrorMessage() << std::endl;
+					}
 				}
 			}
 		}

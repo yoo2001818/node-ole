@@ -45,6 +45,9 @@
     <ClInclude Include="cpp\dummyClientSite.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="cpp\olewindow.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cpp\main.cpp">
@@ -69,6 +72,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="cpp\dummyClientSite.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="cpp\olewindow.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

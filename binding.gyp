@@ -10,7 +10,8 @@
 		'cpp/nodeutil.cpp',
 		'cpp/oleobject.cpp',
         'cpp/eventListener.cpp',
-		'cpp/dummyClientSite.cpp'
+		'cpp/dummyClientSite.cpp',
+		'cpp/olewindow.cpp'
       ],
       'dependencies': [
       ],

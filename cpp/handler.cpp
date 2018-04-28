@@ -15,7 +15,8 @@ namespace node_ole {
 		};
 		HRESULT hresult;
 		// Start COM environment
-		hresult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+		hresult = OleInitialize(NULL);
+		// hresult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 		if FAILED(hresult) return 1;
 		while (TRUE) {
 			switch (MsgWaitForMultipleObjectsEx(2, handles, INFINITE,

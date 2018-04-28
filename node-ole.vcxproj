@@ -28,6 +28,7 @@
     <ClInclude Include="cpp\info.h" />
     <ClInclude Include="cpp\nodeutil.h" />
     <ClInclude Include="cpp\oleobject.h" />
+    <ClInclude Include="cpp\olewindow.h" />
     <ClInclude Include="cpp\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
@@ -39,6 +40,7 @@
     <ClCompile Include="cpp\main.cpp" />
     <ClCompile Include="cpp\nodeutil.cpp" />
     <ClCompile Include="cpp\oleobject.cpp" />
+    <ClCompile Include="cpp\olewindow.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
